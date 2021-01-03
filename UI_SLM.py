@@ -15,6 +15,7 @@ import slmpy
 import time
 from numpy import genfromtxt
 import os.path
+import numpy as np
 
 
 class Ui_MainWindow(object):
@@ -181,9 +182,9 @@ class Ui_MainWindow(object):
         font.setPointSize(10)
         self.label_14.setFont(font)
         self.label_14.setObjectName("label_14")
-        self.maskdiameter = QtWidgets.QLineEdit(self.centralwidget)
-        self.maskdiameter.setGeometry(QtCore.QRect(440, 300, 113, 22))
-        self.maskdiameter.setObjectName("maskdiameter")
+        self.maskradius = QtWidgets.QLineEdit(self.centralwidget)
+        self.maskradius.setGeometry(QtCore.QRect(440, 300, 113, 22))
+        self.maskradius.setObjectName("maskradius")
         self.label_15 = QtWidgets.QLabel(self.centralwidget)
         self.label_15.setGeometry(QtCore.QRect(520, 10, 81, 16))
         font = QtGui.QFont()
@@ -272,7 +273,7 @@ class Ui_MainWindow(object):
         self.magnification.editingFinished.connect(self.validating_floatmagnification)
         self.wavelength.editingFinished.connect(self.validating_floatwavelength)
         self.beamwaist.editingFinished.connect(self.validating_floatbeamwaist)
-        self.maskdiameter.editingFinished.connect(self.validating_floatmaskdiameter)
+        self.maskradius.editingFinished.connect(self.validating_floatmaskradius)
 
 
     def retranslateUi(self, MainWindow):
@@ -338,7 +339,7 @@ class Ui_MainWindow(object):
             print("Please specify the wave length of the light!")
         elif self.beamwaist.text() == "":
             print("Please specify the beam waist of the gaussian beam!")
-        elif self.maskdiameter.text() == "":
+        elif self.maskradius.text() == "":
             print("Please specify the aperture of the imaging system!")
         else:
             pixelpitch = float(self.pixelpitch.text())*1e-6
@@ -367,8 +368,8 @@ class Ui_MainWindow(object):
             print("Wave length: ", wavelength)
             beamwaist = float(self.beamwaist.text())*1e-3
             print("Input beam waist: ", beamwaist)
-            maskdiameter = float(self.maskdiameter.text())*1e-3
-            print("Aperture size: ", maskdiameter)
+            maskradius = float(self.maskradius.text())*1e-3
+            print("Aperture size: ", maskradius)
             if self.mask.isChecked():
                 mask = 1
             else:
@@ -379,9 +380,13 @@ class Ui_MainWindow(object):
             else:
                 save = 0
             print("Save?", save)
+            slm = slmpy.SLMdisplay(isImageLock=False)
+            resX, resY = slm.getSize()
+            res = np.min([resX, resY])
+            slm.close()
             myIMG = IMGpy.IMG(pixelpitch, [arraysizeBit, arraysizeBit], beamwaist, focallength, magnification,
-                              wavelength, maskdiameter)
-            gaussianAmp, gaussianPhase = myIMG.initSLMImage(mask=False, Plot=False)
+                              wavelength, maskradius, res)
+            gaussianAmp, gaussianPhase = myIMG.initSLMImage(mask=mask, Plot=False)
             Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_RecLattice(distance, [spacingx, spacingy],
                                                                                             [arraysizex, arraysizey], Plot=False)
             print("Focal pitch size: ", Focalpitchx)
@@ -390,12 +395,22 @@ class Ui_MainWindow(object):
             myIMG.plotSLMplane(SLM_Amp)
             myIMG.plotSLMplane(SLM_Phase)
             myIMG.plotFocalplane(Focal_Amp, location)
-            slm = slmpy.SLMdisplay(isImageLock=False)
-            resX, resY = slm.getSize()
-            slm.close()
-            WGScal.SLM_IMG(SLM_Phase, resX, resY, Plot=True, Save=save)
-            #slm.updateArray(SLM_IMG.astype('uint8'))
-           # time.sleep(5)
+            SLM_bit, fftSLM_IMG_Amp_norm = WGScal.SLM_IMG(SLM_Phase, resX, resY, Plot=True, Save=save)
+            # X is column
+            colIMG = np.size(SLM_bit, axis=1)
+            colFFT = np.size(SLM_Phase, axis=1)
+            # Y is row
+            rowIMG = np.size(SLM_bit, axis=0)
+            rowFFT = np.size(SLM_Phase, axis=0)
+            endRowIMG = rowIMG/2
+            startRowIMG = round(endRowIMG-(location[1]-location[0])*rowIMG/rowFFT)
+            endColIMG = colIMG/2
+            startColIMG = round(endColIMG-(location[3]-location[2])*colIMG/colFFT)
+            locationIMG = [int(startRowIMG), int(endRowIMG), int(startColIMG), int(endColIMG)]
+            myIMG.plotFocalplane(fftSLM_IMG_Amp_norm, locationIMG)
+            print("location = ", location)
+            print("locationIMG = ", locationIMG)
+
 
     def send(self):
         if os.path.isfile('SLM.csv'):
@@ -504,13 +519,13 @@ class Ui_MainWindow(object):
         else:
             self.beamwaist.setText("")
 
-    def validating_floatmaskdiameter(self):
+    def validating_floatmaskradius(self):
         validating_rule = QDoubleValidator(0, 100, 4)
       #  print(validating_rule.validate(self.maskdiameter.text(), 0))
-        if validating_rule.validate(self.maskdiameter.text(), 0)[0] == QValidator.Acceptable:
-            self.maskdiameter.setFocus()
+        if validating_rule.validate(self.maskradius.text(), 0)[0] == QValidator.Acceptable:
+            self.maskradius.setFocus()
         else:
-            self.maskdiameter.setText("")
+            self.maskradius.setText("")
 
 if __name__ == "__main__":
     import sys
