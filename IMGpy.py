@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 
 
 class IMG:
-    def __init__(self,pixelpitch,arraySizeBit,beamwaist,focallength,magnification, wavelength,maskdiameter):
+    def __init__(self,pixelpitch,arraySizeBit,beamwaist,focallength,magnification, wavelength, maskradius, SLMRes):
         # pixelpitch = pixel size on the SLM plane
         # arraySizeBit =[size in x, size in y] in bit
         # beamwaist is the input beam waist measured at the SLM plane
         # focallength  = focal length of objective
         # wavelength is the wavelength of tweezer beam
         # maskdiameter is the aperture size in front of the SLM
+        # SLMres is the min screen resolution (pixel number) of the SLM
         self.pixelpitch = pixelpitch
         self.arraySizeBitx = arraySizeBit[0]
         self.arraySizeBity = arraySizeBit[1]
@@ -18,9 +19,10 @@ class IMG:
         self.fobj = focallength
         self.magnification = magnification
         self.wavelength = wavelength
-        self.maskdiameter = maskdiameter
+        self.maskradius = maskradius
         self.ImgResX = 2 ** (int(self.arraySizeBitx))
         self.ImgResY = 2 ** (int(self.arraySizeBity))
+        self.SLMRes = SLMRes
         self.Xps, self.Yps = np.meshgrid(np.linspace(0, self.ImgResX, self.ImgResX), np.linspace(0, self.ImgResY, self.ImgResY))
         # define unit cell on the focal plane
         self.Focalpitchx = self.wavelength*self.fobj/self.ImgResX/(self.pixelpitch*self.magnification)
@@ -33,11 +35,11 @@ class IMG:
         X = self.Xps*self.pixelpitch-self.ImgResX/2*self.pixelpitch
         Y = self.Yps*self.pixelpitch-self.ImgResY/2*self.pixelpitch
         if mask:
-            maskAmp = (X**2+Y**2 <= self.maskdiameter)**2*1
+            maskAmp = (X**2+Y**2 <= self.maskradius**2)*1
             initGaussianAmp = np.multiply(np.sqrt(2/np.pi)/self.beamwaist*np.exp(-(X**2+Y**2)/self.beamwaist**2), maskAmp)
             initGaussianPhase = np.multiply(np.random.rand(self.ImgResX, self.ImgResY)*2*np.pi-np.pi, maskAmp)
         else:
-            initGaussianAmp = np.sqrt(2 / np.pi) / self.beamwaist * np.exp(-(X ** 2 + Y ** 2)/self.beamwaist ** 2)
+            initGaussianAmp = np.sqrt(2/np.pi)/self.beamwaist*np.exp(-(X**2+Y**2)/self.beamwaist**2)
             initGaussianPhase = np.random.rand(self.ImgResX, self.ImgResY)*2*np.pi-np.pi
         initIntensity = np.square(initGaussianAmp)
         initGaussianAmpNorm = initGaussianAmp / np.sqrt(np.sum(initIntensity))
@@ -54,12 +56,18 @@ class IMG:
 
     def plotFocalplane(self, Focal_Field, location):
         # location =[startRow, endRow, startCol, endCol]
-        startRow = location[0]-5
+        startRow = location[0]
         endRow = location[1]
-        startCol = location[2]-5
+        startCol = location[2]
         endCol = location[3]
-        X = self.Xps * self.Focalpitchx * 1e6
-        Y = self.Yps * self.Focalpitchy * 1e6
+        # X is column
+        colField = np.size(Focal_Field, axis=1)
+        focalx = self.Focalpitchx*self.ImgResX/colField
+        # Y is row
+        rowField = np.size(Focal_Field, axis=0)
+        focaly = self.Focalpitchx*self.ImgResY/rowField
+        X = self.Xps * focalx * 1e6
+        Y = self.Yps * focaly * 1e6
         initIntensityRegion = np.zeros((int(self.ImgResY), int(self.ImgResX)))
         initIntensityRegion[startRow:endRow, :][:, startCol:endCol] = 1
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 3.5), constrained_layout=True)
@@ -100,10 +108,13 @@ class IMG:
         spacingy = round(spacing[1]/self.Focalpitchy)
         startRow, endRow, startCol, endCol = Trap.assembleRecLattice(arraysize, [spacingx, spacingy])
         targetAmp[startRow:endRow:spacingy,:][:, startCol:endCol:spacingx]=intensityPerSite**0.5
-
+        startRow_display = int(startRow-spacingy)
+        endRow_display = int(self.ImgResY/2)
+        startCol_display = int(startCol-spacingx)
+        endCol_display = int(self.ImgResX/2)
+        location = [startRow_display, endRow_display, startCol_display, endCol_display]
         if Plot:
-            self.plotFocalplane(targetAmp, [startRow, endRow, startCol, endCol])
-        location = [startRow, endRow, startCol, endCol]
+            self.plotFocalplane(targetAmp, location)
         return self.Focalpitchx,self.Focalpitchy, targetAmp, location
 
 
@@ -197,31 +208,37 @@ class WGS:
         # SLMResX, SLMResY retrieve the size of the SLM screen
         # The final result will be converted into an 8 bit image
         # X is column
-        col = np.size(SLM_Phase, axis=0)
+        col = np.size(SLM_Phase, axis=1)
         # Y is row
-        row = np.size(SLM_Phase, axis=1)
+        row = np.size(SLM_Phase, axis=0)
         centerX = col/2
         centerY = row/2
-        startCol = centerX-round(SLMResX/2)
-        endCol = centerX+round(SLMResX/2)
-        startRow = centerY-round(SLMResY/2)
-        endRow = centerY+round(SLMResY/2)
+        SLMRes = np.min([SLMResX, SLMResY])
+        startCol = centerX-round(SLMRes/2)
+        endCol = centerX+round(SLMRes/2)
+        startRow = centerY-round(SLMRes/2)
+        endRow = centerY+round(SLMRes/2)
         SLM_IMG = SLM_Phase[int(startRow):int(endRow), :][:, int(startCol):int(endCol)]
+        SLM_gaussianAmp = self.initGaussianAmp[int(startRow):int(endRow), :][:, int(startCol):int(endCol)]
+        SLM_Field_final = np.multiply(SLM_gaussianAmp, np.exp(1j*SLM_IMG))
+        fftSLM_IMG = sp.fft.fftshift(sp.fft.fft2(SLM_Field_final))
+        fftSLM_IMG_normfactor = np.sqrt(np.sum(np.square(np.abs(fftSLM_IMG))))
+        fftSLM_IMG_Amp_norm = np.abs(fftSLM_IMG/fftSLM_IMG_normfactor)
        # location = [startRow, endRow, startCol, endCol]
         SLM_bit = self.phaseTobit(SLM_IMG)
         if Plot:
-            colIMG = np.size(SLM_IMG, axis=0)
-            rowIMG = np.size(SLM_IMG, axis=1)
-            # For meshgrid function, X is row, Y is column
-            X, Y = np.meshgrid(np.linspace(0, rowIMG, rowIMG), np.linspace(0, colIMG, colIMG))
-            c = plt.pcolormesh(X, Y, SLM_bit, cmap='Greens', vmin=np.min(SLM_bit),
-                              vmax=np.max(SLM_bit))
+            colIMG = np.size(SLM_IMG, axis=1)
+            rowIMG = np.size(SLM_IMG, axis=0)
+            # For meshgrid function, X is col, Y is row
+            X, Y = np.meshgrid(np.linspace(0, colIMG, colIMG), np.linspace(0, rowIMG, rowIMG))
+            c = plt.pcolormesh(X, Y, SLM_gaussianAmp, cmap='Greens', vmin=np.min(SLM_gaussianAmp),
+                              vmax=np.max(SLM_gaussianAmp))
             plt.colorbar(c)
             plt.title("Physical SLM plane")
             plt.show()
         if Save:
             np.savetxt("SLM.csv", SLM_bit, delimiter=",")
-        return SLM_bit
+        return SLM_bit, fftSLM_IMG_Amp_norm
 
     def phaseTobit(self, SLM_IMG):
         # This function change a phase number between -pi to pi to an integer between 0 to 255
