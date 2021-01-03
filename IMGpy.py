@@ -226,18 +226,26 @@ class WGS:
         fftSLM_IMG_Amp_norm = np.abs(fftSLM_IMG/fftSLM_IMG_normfactor)
        # location = [startRow, endRow, startCol, endCol]
         SLM_bit = self.phaseTobit(SLM_IMG)
+        SLM_screen = np.zeros((int(SLMResY), int(SLMResX)))
+        col_SLM_bit = np.size(SLM_bit, axis=1)
+        row_SLM_bit = np.size(SLM_bit, axis=0)
+        startRow_screen = SLMResY/2-round(row_SLM_bit/2)
+        endRow_screen = SLMResY/2+round(row_SLM_bit/2)
+        startCol_screen = SLMResX/2-round(col_SLM_bit/2)
+        endCol_screen = SLMResX/2+round(col_SLM_bit/2)
+        SLM_screen[int(startRow_screen):int(endRow_screen), :][:, int(startCol_screen):int(endCol_screen)] = SLM_bit
         if Plot:
-            colIMG = np.size(SLM_IMG, axis=1)
-            rowIMG = np.size(SLM_IMG, axis=0)
+            colIMG = np.size(SLM_screen, axis=1)
+            rowIMG = np.size(SLM_screen, axis=0)
             # For meshgrid function, X is col, Y is row
             X, Y = np.meshgrid(np.linspace(0, colIMG, colIMG), np.linspace(0, rowIMG, rowIMG))
-            c = plt.pcolormesh(X, Y, SLM_gaussianAmp, cmap='Greens', vmin=np.min(SLM_gaussianAmp),
-                              vmax=np.max(SLM_gaussianAmp))
+            c = plt.pcolormesh(X, Y, SLM_screen, cmap='Greens', vmin=np.min(SLM_screen),
+                              vmax=np.max(SLM_screen))
             plt.colorbar(c)
             plt.title("Physical SLM plane")
             plt.show()
         if Save:
-            np.savetxt("SLM.csv", SLM_bit, delimiter=",")
+            np.savetxt("SLM.csv", SLM_screen, delimiter=",")
         return SLM_bit, fftSLM_IMG_Amp_norm
 
     def phaseTobit(self, SLM_IMG):
