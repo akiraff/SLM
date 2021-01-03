@@ -384,6 +384,8 @@ class Ui_MainWindow(object):
             resX, resY = slm.getSize()
             res = np.min([resX, resY])
             slm.close()
+            print("resX =: ", resX)
+            print("resY=: ", resY)
             myIMG = IMGpy.IMG(pixelpitch, [arraysizeBit, arraysizeBit], beamwaist, focallength, magnification,
                               wavelength, maskradius, res)
             gaussianAmp, gaussianPhase = myIMG.initSLMImage(mask=mask, Plot=False)
