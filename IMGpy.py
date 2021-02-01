@@ -117,6 +117,17 @@ class IMG:
             self.plotFocalplane(targetAmp, location)
         return self.Focalpitchx,self.Focalpitchy, targetAmp, location
 
+    def diffraction_efficiency(self, location):
+        # This function calculates the diffraction efficiency at different location according to the distance from origin
+        # Diffraction efficiency = sinc^2(pi/2*(dtrap/dmax)), dmax=fobj/magnification*wavelength/pixelpitch
+        # location =[m,n]=[row,column]
+        dmax = self.fobj/self.magnification*self.wavelength/self.pixelpitch
+        mcenter = self.ImgResX / 2
+        ncenter = self.ImgResY / 2
+        d = np.sqrt(((location[0]-mcenter)*self.Focalpitchx)**2+((location[1]-ncenter)*self.Focalpitchy)**2)
+        diffrac_efficiency = (np.sinc(np.pi/2*d/dmax))**2
+        return diffrac_efficiency
+
 
 class Tweezer:
     def __init__(self,location, intensity):
