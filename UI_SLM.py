@@ -392,7 +392,8 @@ class Ui_MainWindow(object):
             Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_RecLattice(distance, [spacingx, spacingy],
                                                                                             [arraysizex, arraysizey], Plot=False)
             print("Focal pitch size: ", Focalpitchx)
-            WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
+            targetAmp_diffrac = myIMG.modify_targetAmp(targetAmp, location)
+            WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp_diffrac)
             SLM_Amp, SLM_Phase, Focal_Amp, non_uniform = WGScal.fftLoop(Loop, threshold)
             myIMG.plotSLMplane(SLM_Amp)
             myIMG.plotSLMplane(SLM_Phase)

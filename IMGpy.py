@@ -10,7 +10,7 @@ class IMG:
         # beamwaist is the input beam waist measured at the SLM plane
         # focallength  = focal length of objective
         # wavelength is the wavelength of tweezer beam
-        # maskdiameter is the aperture size in front of the SLM
+        # maskradius is the aperture size in front of the SLM
         # SLMres is the min screen resolution (pixel number) of the SLM
         self.pixelpitch = pixelpitch
         self.arraySizeBitx = arraySizeBit[0]
@@ -121,13 +121,27 @@ class IMG:
         # This function calculates the diffraction efficiency at different location according to the distance from origin
         # Diffraction efficiency = sinc^2(pi/2*(dtrap/dmax)), dmax=fobj/magnification*wavelength/pixelpitch
         # location =[m,n]=[row,column]
-        dmax = self.fobj/self.magnification*self.wavelength/self.pixelpitch
+        dmax = self.fobj/self.magnification*self.wavelength/self.pixelpitch/2
         mcenter = self.ImgResX / 2
         ncenter = self.ImgResY / 2
         d = np.sqrt(((location[0]-mcenter)*self.Focalpitchx)**2+((location[1]-ncenter)*self.Focalpitchy)**2)
         diffrac_efficiency = (np.sinc(np.pi/2*d/dmax))**2
         return diffrac_efficiency
 
+    def modify_targetAmp(self, targetAmp, location, Plot = True):
+        # X is column
+        col = np.size(targetAmp, axis=1)
+        # Y is row
+        row = np.size(targetAmp, axis=0)
+        diffracEff = np.zeros_like(targetAmp)
+        for i in range(col):
+            for j in range(row):
+                diffrac = self.diffraction_efficiency([j,i])
+                diffracEff[j][i] = diffrac
+        targetAmp_diffrac = np.divide(targetAmp,diffracEff)
+        if Plot:
+            self.plotFocalplane(targetAmp_diffrac, location)
+        return targetAmp_diffrac
 
 class Tweezer:
     def __init__(self,location, intensity):
