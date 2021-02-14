@@ -103,7 +103,7 @@ class IMG:
         n = ncenter - dn
         totalsitesnum = arraysize[0]*arraysize[1]
         intensityPerSite = 1/totalsitesnum
-        Trap = Tweezer([m,n], intensityPerSite)
+        Trap = Tweezer([m,n])
         spacingx = round(spacing[0]/self.Focalpitchx)
         spacingy = round(spacing[1]/self.Focalpitchy)
         startRow, endRow, startCol, endCol = Trap.assembleRecLattice(arraysize, [spacingx, spacingy])
@@ -120,7 +120,7 @@ class IMG:
     def diffraction_efficiency(self, location):
         # This function calculates the diffraction efficiency at different location according to the distance from origin
         # Diffraction efficiency = sinc^2(pi/2*(dtrap/dmax)), dmax=fobj/magnification*wavelength/pixelpitch
-        # location =[m,n]=[row,column]
+        # location =[m,n]=[column, row]
         dmax = self.fobj/self.magnification*self.wavelength/self.pixelpitch/2
         mcenter = self.ImgResX / 2
         ncenter = self.ImgResY / 2
@@ -129,6 +129,9 @@ class IMG:
         return diffrac_efficiency
 
     def modify_targetAmp(self, targetAmp, location, Plot = True):
+        # This function receives an intensity pattern with uniform intensity on different lattice sites, it will
+        # output a target intensity pattern taking into account the finite diffraction efficiency.
+        # Currently, this function uses the theoretical value, will update by measurements if necessary.
         # X is column
         col = np.size(targetAmp, axis=1)
         # Y is row
@@ -144,12 +147,11 @@ class IMG:
         return targetAmp_diffrac
 
 class Tweezer:
-    def __init__(self,location, intensity):
+    def __init__(self,location):
         # Here the location is chosen for the point nearest to the origin (zero order), I choose this point to locate at
         # the bottom left region
         self.m = location[0]
         self.n = location[1]
-        self.intensity = intensity
 
     def assembleRecLattice(self, arraysize, spacing):
         arraysizex = arraysize[0]
@@ -163,6 +165,29 @@ class Tweezer:
         if startRow <0 or startCol < 0:
             raise Exception("Sorry, too big an array, SLM cannot handle, consider shrinking the spacing or the size!")
         return int(startRow), int(endRow), int(startCol), int(endCol)
+
+    def unitcell_Kagome(self, spacing):
+        # This function defines the unit cell for Kagome geometry, it will return the unit cell corrdinate as well as
+        # primitive vector.
+        # unit cell ['site index'] = [X, Y] = [Col, Row]
+        spacingh = round(spacing[0] / self.Focalpitchx)
+        spacingv = round(spacing[1] / self.Focalpitchy)
+        p_vector = {}
+        p_vector['ev'] = np.array([-1/2, -np.sqrt(3)/2])
+        p_vector['eh'] = [-1, 0]
+
+        unitcell = {}
+        unitcell['site 1'] = [self.m, self.n]
+        unitcell['site 1 intensity'] = 1
+        unitcell['site 2'] = (np.round(unitcell['site 1'] + spacingv * p_vector['ev']))
+        unitcell['site 2 intensity'] = 1
+        unitcell['site 3'] = (np.round(unitcell['site 2'] + spacingh * p_vector['eh']))
+        unitcell['site 3 intensity'] = 1
+        unitcell['site 4'] = (np.round(unitcell['site 1'] + spacingh * p_vector['eh']))
+        unitcell['site 4 intensity'] = 0
+
+        return p_vector, unitcell
+
 
 
 class WGS:
