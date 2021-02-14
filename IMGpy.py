@@ -139,7 +139,7 @@ class IMG:
         diffracEff = np.zeros_like(targetAmp)
         for i in range(col):
             for j in range(row):
-                diffrac = self.diffraction_efficiency([j,i])
+                diffrac = self.diffraction_efficiency([i,j])
                 diffracEff[j][i] = diffrac
         targetAmp_diffrac = np.divide(targetAmp,diffracEff)
         if Plot:
