@@ -103,15 +103,58 @@ class IMG:
         n = ncenter - dn
         totalsitesnum = arraysize[0]*arraysize[1]
         intensityPerSite = 1/totalsitesnum
-        Trap = Tweezer([m,n])
         spacingx = round(spacing[0]/self.Focalpitchx)
         spacingy = round(spacing[1]/self.Focalpitchy)
-        startRow, endRow, startCol, endCol = Trap.assembleRecLattice(arraysize, [spacingx, spacingy])
+        print([spacingx,spacingy])
+        print(arraysize)
+        Trap = Tweezer([m, n],arraysize)
+        startRow, endRow, startCol, endCol = Trap.assembleRecLattice([spacingx, spacingy])
         targetAmp[startRow:endRow:spacingy,:][:, startCol:endCol:spacingx]=intensityPerSite**0.5
         startRow_display = int(startRow-spacingy)
         endRow_display = int(self.ImgResY/2)
         startCol_display = int(startCol-spacingx)
         endCol_display = int(self.ImgResX/2)
+        location = [startRow_display, endRow_display, startCol_display, endCol_display]
+        if Plot:
+            self.plotFocalplane(targetAmp, location)
+        return self.Focalpitchx,self.Focalpitchy, targetAmp, location
+
+    def initFocalImage_KagomeLattice(self, distance, spacing, arraysize, Plot = True):
+        # This function is used to generate the Kagome geometry in the focal plane
+        # Parameters definition are the same as Rec_lattice
+        targetAmp = np.zeros((int(self.ImgResY), int(self.ImgResX)))
+        dm = round(distance / np.sqrt(2) / self.Focalpitchx)
+        dn = round(distance / np.sqrt(2) / self.Focalpitchy)
+        mcenter = self.ImgResX / 2
+        ncenter = self.ImgResY / 2
+        m = mcenter - dm
+        n = ncenter - dn
+        totalsitesnum = arraysize[0] * arraysize[1]
+        intensityPerSite = 1 / totalsitesnum
+        spacingx = round(spacing[0] / self.Focalpitchx)
+        spacingy = round(spacing[1] / self.Focalpitchy)
+        print([spacingx, spacingy])
+        print(arraysize)
+        # Build Kagome cell
+        Trap = Tweezer([m, n], arraysize)
+        p_vector, unitcell, num_cell_h, num_cell_v = Trap.unitcell_Kagome([spacingx, spacingy])
+        print(p_vector)
+        Kagome_cell = Trap.assembleLatticeFromUnitcell([spacingx, spacingy], p_vector, unitcell, num_cell_h, num_cell_v)
+        print(Kagome_cell)
+        # Launch Kagome cell onto targetAmp
+        for cell_value in Kagome_cell.values():
+           # print(cell_value)
+            site_loc = cell_value[0:2]
+            col = site_loc[0]
+            row = site_loc[1]
+            targetAmp[row, col] = cell_value[2]
+        Traploc = np.argwhere(targetAmp == 1)
+        Traprow = Traploc[:, 0]
+        Trapcol = Traploc[:, 1]
+        startRow_display = int(np.min(Traprow) - spacingy)
+        endRow_display = int(self.ImgResY / 2)
+        startCol_display = int(np.min(Trapcol) - spacingx)
+        endCol_display = int(self.ImgResX / 2)
         location = [startRow_display, endRow_display, startCol_display, endCol_display]
         if Plot:
             self.plotFocalplane(targetAmp, location)
@@ -147,46 +190,86 @@ class IMG:
         return targetAmp_diffrac
 
 class Tweezer:
-    def __init__(self,location):
+    def __init__(self,location,arraysize):
         # Here the location is chosen for the point nearest to the origin (zero order), I choose this point to locate at
-        # the bottom left region
+        # the bottom left region, spacing in this class counts the matrix spacing, not the real spacing in focal plane
         self.m = location[0]
         self.n = location[1]
+        self.arraysizex = arraysize[0]
+        self.arraysizey = arraysize[1]
 
-    def assembleRecLattice(self, arraysize, spacing):
-        arraysizex = arraysize[0]
-        arraysizey = arraysize[1]
-        spacingx = spacing[0]
-        spacingy = spacing[1]
-        startRow = self.n-arraysizey*spacingy
+
+    def assembleRecLattice(self, spacing):
+        spacingx=spacing[0]
+        spacingy=spacing[1]
+        startRow = self.n-self.arraysizey*spacingy
         endRow = self.n
-        startCol = self.m-arraysizex*spacingx
+        startCol = self.m-self.arraysizex*spacingx
         endCol = self.m
-        if startRow <0 or startCol < 0:
+        if startRow < 0 or startCol < 0:
             raise Exception("Sorry, too big an array, SLM cannot handle, consider shrinking the spacing or the size!")
         return int(startRow), int(endRow), int(startCol), int(endCol)
+
+    def assembleLatticeFromUnitcell(self, spacing, p_vector, unitcell, num_cell_h, num_cell_v):
+        # This function assembles a lattice from unit cell using primitive vector
+        spacingh = spacing[0]
+        spacingv = spacing[1]
+        xtranslate = int(round(self.arraysizex / num_cell_h - 1))
+        ytranslate = int(round(self.arraysizey / num_cell_v - 1))
+        cell = {}
+        for site_info, site_value in unitcell.items():
+            site_loc = site_value[0:2]
+            site_inten = site_value[2]
+            # Build unit cell
+            cell['unit cell: ' + site_info] = site_loc
+            cell['unit cell: ' + site_info] = np.append(cell['unit cell: ' + site_info], site_inten)
+            for j in range(xtranslate):
+                cell['unit cell: ' + site_info + ' cell: ' + str(2 * j + 1)] = np.round(
+                    site_loc + p_vector['eh'] * (j + 1) * num_cell_h * spacingh).astype(int)
+                cell['unit cell: ' + site_info + ' cell: ' + str(2 * j + 1)] = np.append(
+                    cell['unit cell: ' + site_info + ' cell: ' + str(2 * j + 1)], site_inten)
+            for j in range(ytranslate):
+                cell['unit cell: ' + site_info + ' cell: ' + str(2 * j)] = np.round(
+                    site_loc + p_vector['ev'] * (j + 1) * num_cell_v * spacingv).astype(int)
+                cell['unit cell: ' + site_info + ' cell: ' + str(2 * j)] = np.append(
+                    cell['unit cell: ' + site_info + ' cell: ' + str(2 * j)], site_inten)
+                for k in range(xtranslate):
+                    cell['unit cell: ' + site_info + ' cell: ' + str(2 * j) + ' Expand Horizontally: ' + str(k)] = \
+                        np.round(site_loc + p_vector['ev'] * (j + 1) * num_cell_v * spacingv
+                                 + p_vector['eh'] * (k + 1) * num_cell_h * spacingh).astype(int)
+
+                    cell['unit cell: ' + site_info + ' cell: ' + str(2 * j) + ' Expand Horizontally: ' + str(k)] = \
+                        np.append(cell['unit cell: ' + site_info + ' cell: ' + str(2 * j) + ' Expand Horizontally: '
+                                       + str(k)], site_inten)
+        return cell
+
 
     def unitcell_Kagome(self, spacing):
         # This function defines the unit cell for Kagome geometry, it will return the unit cell corrdinate as well as
         # primitive vector.
         # unit cell ['site index'] = [X, Y] = [Col, Row]
-        spacingh = round(spacing[0] / self.Focalpitchx)
-        spacingv = round(spacing[1] / self.Focalpitchy)
+        spacingh = spacing[0]
+        spacingv = spacing[1]
         p_vector = {}
         p_vector['ev'] = np.array([-1/2, -np.sqrt(3)/2])
-        p_vector['eh'] = [-1, 0]
+        p_vector['eh'] = np.array([-1, 0])
+
+        # Number of sites horizontally and vertically per unit cell
+        num_cell_h = 2
+        num_cell_v = 2
 
         unitcell = {}
-        unitcell['site 1'] = [self.m, self.n]
-        unitcell['site 1 intensity'] = 1
-        unitcell['site 2'] = (np.round(unitcell['site 1'] + spacingv * p_vector['ev']))
-        unitcell['site 2 intensity'] = 1
-        unitcell['site 3'] = (np.round(unitcell['site 2'] + spacingh * p_vector['eh']))
-        unitcell['site 3 intensity'] = 1
-        unitcell['site 4'] = (np.round(unitcell['site 1'] + spacingh * p_vector['eh']))
-        unitcell['site 4 intensity'] = 0
+        unitcell['site 1'] = np.array([self.m, self.n]).astype(int)
+        unitcell['site 2'] = (np.round(unitcell['site 1'] + spacingv * p_vector['ev'])).astype(int)
+        unitcell['site 3'] = (np.round(unitcell['site 2'] + spacingh * p_vector['eh'])).astype(int)
+        unitcell['site 4'] = (np.round(unitcell['site 1'] + spacingh * p_vector['eh'])).astype(int)
+        # Append trap intensity as the last value in the array
+        unitcell['site 1'] = np.append(unitcell['site 1'], 1)
+        unitcell['site 2'] = np.append(unitcell['site 2'], 1)
+        unitcell['site 3'] = np.append(unitcell['site 3'], 1)
+        unitcell['site 4'] = np.append(unitcell['site 4'], 0)
 
-        return p_vector, unitcell
+        return p_vector, unitcell, num_cell_h, num_cell_v
 
 
 
