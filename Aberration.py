@@ -23,6 +23,7 @@ class Zernike:
         apertureD = int(round(self.aperture_radius/self.pixelpitch*2))
         Zmatrix_size = np.min([SLMRes, apertureD])
         r0 = self.pixelpitch*Zmatrix_size/2
+        r0mm = r0 * 1e3
         cart = RZern(6)
         ddx = np.linspace(-1.0, 1.0, Zmatrix_size)
         ddy = np.linspace(-1.0, 1.0, Zmatrix_size)
@@ -37,7 +38,6 @@ class Zernike:
         Phi_norm = Phi
         n = cart.ntab[self.ind_Zernike]
         m = cart.mtab[self.ind_Zernike]
-        r0mm = r0*1e3
         zernike_str = f"Radial: {n}, Angular: {m}"
         print(zernike_str)
         # Launch the Zernike phase pattern to SLM screen
