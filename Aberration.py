@@ -63,7 +63,7 @@ SLMResX = 1272
 SLMResY = 1024
 pixelpitch = 12.5e-6
 aperture_radius = 6.5e-3
-ind_Zernike = 5
+ind_Zernike = 7
 percent = 0.01
 myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
 SLM_screen = myOberrationCorr.phase_Zernike(Plot = True, Save = True)
