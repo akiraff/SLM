@@ -49,7 +49,7 @@ class IMG:
 
     def plotSLMplane(self, SLM_Field):
         c = plt.pcolormesh(self.Xps, self.Yps, SLM_Field, cmap='Greens', vmin=np.min(SLM_Field),
-                           vmax=np.max(SLM_Field))
+                           vmax=np.max(SLM_Field), shading='auto')
         plt.colorbar(c)
         plt.title("Field initialization on the SLM plane")
         plt.show()
@@ -70,20 +70,20 @@ class IMG:
         Y = self.Yps * focaly * 1e6
         initIntensityRegion = np.zeros((int(self.ImgResY), int(self.ImgResX)))
         initIntensityRegion[startRow:endRow, :][:, startCol:endCol] = 1
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 3.5), constrained_layout=True)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 3.5), constrained_layout=False)
         ax1.set_aspect(1)
         ax1.pcolormesh(X[startRow:endRow, :][:, startCol:endCol], Y[startRow:endRow, :][:, startCol:endCol],
                        Focal_Field[startRow:endRow, :][:, startCol:endCol], cmap='Greens', vmin=np.min(Focal_Field),
-                       vmax=np.max(Focal_Field))
+                       vmax=np.max(Focal_Field), shading='auto')
         ax1.set_title("Focal plane beam amplitude")
         ax1.set_xlabel('x (\u03bcm)')
         ax1.set_ylabel('y (\u03bcm)')
 
         ax2.set_aspect(1)
         im = ax2.pcolormesh(self.Xps, self.Yps,
-                            initIntensityRegion, cmap='Greens', vmin=0, vmax=np.max(Focal_Field))
+                            initIntensityRegion, cmap='Greens', vmin=0, vmax=np.max(Focal_Field), shading='auto')
         ax2.set_title("Tweezer array location")
-        fig.colorbar(im, orientation="vertical", pad=-0.6, shrink=0.6)
+        fig.colorbar(im, orientation="vertical", pad=0.1, shrink=0.6)
         fig.tight_layout()
         plt.show()
 
@@ -119,7 +119,7 @@ class IMG:
             self.plotFocalplane(targetAmp, location)
         return self.Focalpitchx,self.Focalpitchy, targetAmp, location
 
-    def initFocalImage_KagomeLattice(self, distance, spacing, arraysize, Plot = True):
+    def initFocalImage_KagomeLattice(self, distance, spacing, arraysize, Triangle = False, Plot = True):
         # This function is used to generate the Kagome geometry in the focal plane
         # Parameters definition are the same as Rec_lattice
         targetAmp = np.zeros((int(self.ImgResY), int(self.ImgResX)))
@@ -137,10 +137,10 @@ class IMG:
         print(arraysize)
         # Build Kagome cell
         Trap = Tweezer([m, n], arraysize)
-        p_vector, unitcell, num_cell_h, num_cell_v = Trap.unitcell_Kagome([spacingx, spacingy])
+        p_vector, unitcell, num_cell_h, num_cell_v = Trap.unitcell_Kagome([spacingx, spacingy], Triangle)
         print(p_vector)
         Kagome_cell = Trap.assembleLatticeFromUnitcell([spacingx, spacingy], p_vector, unitcell, num_cell_h, num_cell_v)
-        print(Kagome_cell)
+       # print(Kagome_cell)
         # Launch Kagome cell onto targetAmp
         for cell_value in Kagome_cell.values():
            # print(cell_value)
@@ -244,7 +244,7 @@ class Tweezer:
         return cell
 
 
-    def unitcell_Kagome(self, spacing):
+    def unitcell_Kagome(self, spacing, Triangle = False):
         # This function defines the unit cell for Kagome geometry, it will return the unit cell corrdinate as well as
         # primitive vector.
         # unit cell ['site index'] = [X, Y] = [Col, Row]
@@ -267,7 +267,10 @@ class Tweezer:
         unitcell['site 1'] = np.append(unitcell['site 1'], 1)
         unitcell['site 2'] = np.append(unitcell['site 2'], 1)
         unitcell['site 3'] = np.append(unitcell['site 3'], 1)
-        unitcell['site 4'] = np.append(unitcell['site 4'], 0)
+        if Triangle:
+            unitcell['site 4'] = np.append(unitcell['site 4'], 1)
+        else:
+            unitcell['site 4'] = np.append(unitcell['site 4'], 0)
 
         return p_vector, unitcell, num_cell_h, num_cell_v
 
@@ -373,7 +376,7 @@ class WGS:
             # For meshgrid function, X is col, Y is row
             X, Y = np.meshgrid(np.linspace(0, colIMG, colIMG), np.linspace(0, rowIMG, rowIMG))
             c = plt.pcolormesh(X, Y, SLM_screen, cmap='Greens', vmin=np.min(SLM_screen),
-                              vmax=np.max(SLM_screen))
+                              vmax=np.max(SLM_screen), shading='auto')
             plt.colorbar(c)
             plt.title("Physical SLM plane")
             plt.show()

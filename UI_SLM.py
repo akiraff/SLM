@@ -154,27 +154,43 @@ class Ui_MainWindow(object):
         self.label_11.setFont(font)
         self.label_11.setObjectName("label_11")
         self.label_12 = QtWidgets.QLabel(self.centralwidget)
-        self.label_12.setGeometry(QtCore.QRect(120, 260, 55, 16))
+        self.label_12.setGeometry(QtCore.QRect(150, 260, 55, 16))
         font = QtGui.QFont()
         font.setFamily("Arial")
         font.setPointSize(10)
         self.label_12.setFont(font)
         self.label_12.setObjectName("label_12")
         self.arraySizex = QtWidgets.QLineEdit(self.centralwidget)
-        self.arraySizex.setGeometry(QtCore.QRect(90, 280, 81, 22))
+        self.arraySizex.setGeometry(QtCore.QRect(120, 280, 81, 22))
         self.arraySizex.setText("")
         self.arraySizex.setObjectName("arraySizex")
         self.label_13 = QtWidgets.QLabel(self.centralwidget)
-        self.label_13.setGeometry(QtCore.QRect(220, 260, 55, 21))
+        self.label_13.setGeometry(QtCore.QRect(260, 260, 55, 21))
         font = QtGui.QFont()
         font.setFamily("Arial")
         font.setPointSize(10)
         self.label_13.setFont(font)
         self.label_13.setObjectName("label_13")
         self.arraySizey = QtWidgets.QLineEdit(self.centralwidget)
-        self.arraySizey.setGeometry(QtCore.QRect(200, 280, 81, 22))
+        self.arraySizey.setGeometry(QtCore.QRect(230, 280, 81, 22))
         self.arraySizey.setText("")
         self.arraySizey.setObjectName("arraySizey")
+
+        self.label_21 = QtWidgets.QLabel(self.centralwidget)
+        self.label_21.setGeometry(QtCore.QRect(15, 260, 100, 21))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.label_21.setFont(font)
+        self.label_21.setObjectName("label_21")
+        self.arrayGeometry = QtWidgets.QComboBox(self.centralwidget)
+        self.arrayGeometry.setGeometry(QtCore.QRect(10, 280, 81, 22))
+        self.arrayGeometry.setObjectName("arrayGeometry")
+        self.arrayGeometry.addItem("")
+        self.arrayGeometry.addItem("")
+        self.arrayGeometry.addItem("")
+
+
         self.label_14 = QtWidgets.QLabel(self.centralwidget)
         self.label_14.setGeometry(QtCore.QRect(430, 270, 151, 21))
         font = QtGui.QFont()
@@ -313,6 +329,10 @@ class Ui_MainWindow(object):
         self.label_18.setText(_translate("MainWindow", "x"))
         self.label_19.setText(_translate("MainWindow", "y"))
         self.label_20.setText(_translate("MainWindow", "Beam waist (mm)"))
+        self.label_21.setText(_translate("MainWindow", "Geometry"))
+        self.arrayGeometry.setItemText(0, _translate("MainWindow", "Rec"))
+        self.arrayGeometry.setItemText(1, _translate("MainWindow", "Triangle"))
+        self.arrayGeometry.setItemText(2, _translate("MainWindow", "Kagome"))
 
     def calculate(self):
         if self.pixelpitch.text() == "":
@@ -354,6 +374,8 @@ class Ui_MainWindow(object):
             print("array size along x: ", arraysizex)
             arraysizey = int(self.arraySizey.text())
             print("array size along y: ", arraysizey)
+            lattice = self.arrayGeometry.currentText()
+            print("array geometry: ", lattice)
             arraysizeBit = int(self.arraySizeBit.currentText())
             print("FFT grid (Bit): ", arraysizeBit)
             threshold = float(self.threshold.text())
@@ -380,7 +402,8 @@ class Ui_MainWindow(object):
             else:
                 save = 0
             print("Save?", save)
-            slm = slmpy.SLMdisplay(isImageLock=False)
+            #slm = slmpy.SLMdisplay(isImageLock=False)
+            slm = slmpy.SLMdisplay()
             resX, resY = slm.getSize()
             res = np.min([resX, resY])
             slm.close()
@@ -389,12 +412,20 @@ class Ui_MainWindow(object):
             myIMG = IMGpy.IMG(pixelpitch, [arraysizeBit, arraysizeBit], beamwaist, focallength, magnification,
                               wavelength, maskradius, res)
             gaussianAmp, gaussianPhase = myIMG.initSLMImage(mask=mask, Plot=False)
-            #Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_RecLattice(distance, [spacingx, spacingy],
-            #                                                                                [arraysizex, arraysizey], Plot=False)
-            Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_KagomeLattice(distance,
+            if lattice == "Rec":
+                Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_RecLattice(distance, [spacingx, spacingy],
+                                                                                            [arraysizex, arraysizey], Plot=False)
+            elif lattice == "Kagome":
+                Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_KagomeLattice(distance,
                                                                                             [spacingx, spacingy],
                                                                                             [arraysizex, arraysizey],
                                                                                             Plot=True)
+            else:
+                Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_KagomeLattice(distance,
+                                                                                                   [spacingx, spacingy],
+                                                                                                   [arraysizex,
+                                                                                                    arraysizey], Triangle=True,
+                                                                                                   Plot=True)
             print("Focal pitch size: ", Focalpitchx)
          #   targetAmp_diffrac = myIMG.modify_targetAmp(targetAmp, location)
             targetAmp_diffrac = targetAmp
