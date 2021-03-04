@@ -37,7 +37,8 @@ class SLMframe(wx.Frame):
         self.SetMonitor(monitor)
         # Set the frame to the position and size of the target monitor
         wx.Frame.__init__(self,None,-1,'SLM window',pos = (self._x0, self._y0), size = (self._resX, self._resY)) 
-        self.img = wx.EmptyImage(2,2)
+        #self.img = wx.EmptyImage(2,2)
+        self.img = wx.Image(2, 2)
         self.bmp = self.img.ConvertToBitmap()
         self.clientSize = self.GetClientSize()
         # Update the image upon receiving an event EVT_NEW_IMAGE
@@ -119,6 +120,8 @@ class SLMdisplay:
         
     def close(self):
         self.vt.frame.Close()
+        wx.DisableAsserts()
+
 
 class videoThread(threading.Thread):
     """Run the MainLoop as a thread. Access the frame with self.frame."""
