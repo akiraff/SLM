@@ -12,6 +12,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QDoubleValidator, QValidator
 import IMGpy
 import slmpy
+from Aberration import Zernike
+from file_dialog_widget import LoadAndSave
 import time
 from numpy import genfromtxt
 import os.path
@@ -21,7 +23,7 @@ import numpy as np
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(743, 431)
+        MainWindow.resize(743, 531)
        # MainWindow.setWindowTitle("SLM")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -190,6 +192,38 @@ class Ui_MainWindow(object):
         self.arrayGeometry.addItem("")
         self.arrayGeometry.addItem("")
 
+        self.label_22 = QtWidgets.QLabel(self.centralwidget)
+        self.label_22.setGeometry(QtCore.QRect(0, 420, 121, 41))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(12)
+        font.setBold(True)
+        font.setItalic(True)
+        font.setWeight(75)
+        self.label_22.setFont(font)
+        self.label_22.setObjectName("label_22")
+
+        self.label_23 = QtWidgets.QLabel(self.centralwidget)
+        self.label_23.setGeometry(QtCore.QRect(130, 400, 151, 21))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.label_23.setFont(font)
+        self.label_23.setObjectName("label_23")
+        self.zind = QtWidgets.QLineEdit(self.centralwidget)
+        self.zind.setGeometry(QtCore.QRect(150, 430, 51, 21))
+        self.zind.setObjectName("zind")
+
+        self.label_24 = QtWidgets.QLabel(self.centralwidget)
+        self.label_24.setGeometry(QtCore.QRect(250, 400, 151, 21))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.label_24.setFont(font)
+        self.label_24.setObjectName("label_24")
+        self.zindpercent = QtWidgets.QLineEdit(self.centralwidget)
+        self.zindpercent.setGeometry(QtCore.QRect(250, 430, 51, 21))
+        self.zindpercent.setObjectName("zindpercent")
 
         self.label_14 = QtWidgets.QLabel(self.centralwidget)
         self.label_14.setGeometry(QtCore.QRect(430, 270, 151, 21))
@@ -290,7 +324,8 @@ class Ui_MainWindow(object):
         self.wavelength.editingFinished.connect(self.validating_floatwavelength)
         self.beamwaist.editingFinished.connect(self.validating_floatbeamwaist)
         self.maskradius.editingFinished.connect(self.validating_floatmaskradius)
-
+        self.zind.editingFinished.connect(self.validating_integerzind)
+        self.zindpercent.editingFinished.connect(self.validating_floatzindpercent)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -333,6 +368,9 @@ class Ui_MainWindow(object):
         self.arrayGeometry.setItemText(0, _translate("MainWindow", "Rec"))
         self.arrayGeometry.setItemText(1, _translate("MainWindow", "Triangle"))
         self.arrayGeometry.setItemText(2, _translate("MainWindow", "Kagome"))
+        self.label_22.setText(_translate("MainWindow", "Aberration"))
+        self.label_23.setText(_translate("MainWindow", "Zernike index"))
+        self.label_24.setText(_translate("MainWindow", "Percent"))
 
     def calculate(self):
         if self.pixelpitch.text() == "":
@@ -434,7 +472,7 @@ class Ui_MainWindow(object):
             myIMG.plotSLMplane(SLM_Amp)
             myIMG.plotSLMplane(SLM_Phase)
             myIMG.plotFocalplane(Focal_Amp, location)
-            SLM_bit, fftSLM_IMG_Amp_norm = WGScal.SLM_IMG(SLM_Phase, resX, resY, Plot=True, Save=save)
+            SLM_bit, fftSLM_IMG_Amp_norm, SLM_Screen_WGS = WGScal.SLM_IMG(SLM_Phase, resX, resY, Plot=True)
             # X is column
             colIMG = np.size(SLM_bit, axis=1)
             colFFT = np.size(SLM_Phase, axis=1)
@@ -449,6 +487,10 @@ class Ui_MainWindow(object):
             myIMG.plotFocalplane(fftSLM_IMG_Amp_norm, locationIMG)
             print("location = ", location)
             print("locationIMG = ", locationIMG)
+            if save:
+                LS = LoadAndSave()
+                LS.SaveFileDialog(SLM_Screen_WGS)
+
 
 
     def send(self):
@@ -565,6 +607,22 @@ class Ui_MainWindow(object):
             self.maskradius.setFocus()
         else:
             self.maskradius.setText("")
+
+    def validating_integerzind(self):
+        validating_rule = QDoubleValidator(1, 27, 0)
+        #   print(validating_rule.validate(self.Loop.text(), 14))
+        if validating_rule.validate(self.zind.text(), 14)[0] == QValidator.Acceptable:
+            self.zind.setFocus()
+        else:
+            self.zind.setText("")
+
+    def validating_floatzindpercent(self):
+        validating_rule = QDoubleValidator(0, 1, 5)
+        #   print(validating_rule.validate(self.Loop.text(), 14))
+        if validating_rule.validate(self.zindpercent.text(), 14)[0] == QValidator.Acceptable:
+            self.zindpercent.setFocus()
+        else:
+            self.zindpercent.setText("")
 
 if __name__ == "__main__":
     import sys
