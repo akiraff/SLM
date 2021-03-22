@@ -22,7 +22,7 @@ class LoadAndSave(QWidget):
         self.initUI()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getOpenFileName(self, "Load WGS files:")
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load WGS phase files:", "", "SLM Files (*.csv)")
         if file_name:
             print(file_name)
         file_path = Path(file_name)
@@ -30,9 +30,32 @@ class LoadAndSave(QWidget):
             SLM_screen_WGS = np.genfromtxt(csvfile, delimiter=',')
         return SLM_screen_WGS
 
+    def LoadConfigFileDialog(self):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load SLM config files:", "", "SLM Config Files (*.npy)")
+        SLMconfig = np.load(file_name, allow_pickle=True).item()
+        return SLMconfig
+
     def SaveFileDialog(self, SLM_screen_WGS):
         self.initUI()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save file:", "", "SLM Files (*.csv)")
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save WGS phase file:", "", "SLM Files (*.csv)")
         np.savetxt(file_name, SLM_screen_WGS, delimiter=",")
+
+    def SaveConfigFileDialog(self, SLMconfigFile):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save config file:", "", "SLM Config Files (*.npy)")
+        np.save(file_name, SLMconfigFile)
+
+
+# check load config file
+#SLMconfig = np.load('SLM_rec_config.npy', allow_pickle=True).item()
+#print(SLMconfig['SLM resX'])
+#LS = LoadAndSave()
+#SLMconfig = LS.LoadConfigFileDialog()
+#print(SLMconfig)
