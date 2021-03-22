@@ -59,11 +59,17 @@ class Zernike:
             np.savetxt(f"SLM_Zernike_{n}{m}_{percent}.csv", SLM_screen_aberr, delimiter=",")
         return SLM_screen_aberr
 
+    def add_Zernke(self, SLM_screen, SLM_screen_aberr):
+        SLM_screen_aberrCorr = SLM_screen + SLM_screen_aberr
+        return SLM_screen_aberrCorr
+
+"""""
 SLMResX = 1272
 SLMResY = 1024
 pixelpitch = 12.5e-6
 aperture_radius = 6.5e-3
-ind_Zernike = 7
+ind_Zernike = 1
 percent = 0.01
 myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
 SLM_screen = myOberrationCorr.phase_Zernike(Plot = True, Save = True)
+"""""
