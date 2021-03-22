@@ -15,8 +15,6 @@ import slmpy
 from Aberration import Zernike
 from file_dialog_widget import LoadAndSave
 import time
-from numpy import genfromtxt
-import os.path
 import numpy as np
 
 
@@ -112,7 +110,7 @@ class Ui_MainWindow(object):
         self.wavelength.setGeometry(QtCore.QRect(440, 230, 113, 22))
         self.wavelength.setObjectName("wavelength")
         self.Button_calculate = QtWidgets.QPushButton(self.centralwidget)
-        self.Button_calculate.setGeometry(QtCore.QRect(140, 340, 93, 28))
+        self.Button_calculate.setGeometry(QtCore.QRect(290, 340, 93, 28))
         font = QtGui.QFont()
         font.setFamily("Arial")
         font.setBold(True)
@@ -120,7 +118,7 @@ class Ui_MainWindow(object):
         self.Button_calculate.setFont(font)
         self.Button_calculate.setObjectName("Button_calculate")
         self.Button_send = QtWidgets.QPushButton(self.centralwidget)
-        self.Button_send.setGeometry(QtCore.QRect(450, 340, 93, 28))
+        self.Button_send.setGeometry(QtCore.QRect(450, 430, 153, 28))
         font = QtGui.QFont()
         font.setFamily("Arial")
         font.setBold(True)
@@ -225,6 +223,26 @@ class Ui_MainWindow(object):
         self.zindpercent.setGeometry(QtCore.QRect(250, 430, 51, 21))
         self.zindpercent.setObjectName("zindpercent")
 
+        self.label_25 = QtWidgets.QLabel(self.centralwidget)
+        self.label_25.setGeometry(QtCore.QRect(330, 420, 101, 41))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(12)
+        font.setBold(True)
+        font.setItalic(True)
+        font.setWeight(75)
+        self.label_25.setFont(font)
+        self.label_25.setObjectName("label_25")
+
+        self.Button_load = QtWidgets.QPushButton(self.centralwidget)
+        self.Button_load.setGeometry(QtCore.QRect(140, 470, 93, 28))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setBold(True)
+        font.setWeight(75)
+        self.Button_load.setFont(font)
+        self.Button_load.setObjectName("Button_load")
+
         self.label_14 = QtWidgets.QLabel(self.centralwidget)
         self.label_14.setGeometry(QtCore.QRect(430, 270, 151, 21))
         font = QtGui.QFont()
@@ -267,6 +285,15 @@ class Ui_MainWindow(object):
         font.setPointSize(10)
         self.save.setFont(font)
         self.save.setObjectName("save")
+
+        self.saveConfig = QtWidgets.QCheckBox(self.centralwidget)
+        self.saveConfig.setGeometry(QtCore.QRect(150, 330, 161, 41))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.saveConfig.setFont(font)
+        self.saveConfig.setObjectName("saveConfig")
+
         self.label_17 = QtWidgets.QLabel(self.centralwidget)
         self.label_17.setGeometry(QtCore.QRect(90, 170, 231, 21))
         font = QtGui.QFont()
@@ -311,6 +338,7 @@ class Ui_MainWindow(object):
 
         self.Button_calculate.clicked.connect(self.calculate)
         self.Button_send.clicked.connect(self.send)
+        self.Button_load.clicked.connect(self.load)
         self.Loop.editingFinished.connect(self.validating_integerLoop)
         self.arraySizex.editingFinished.connect(self.validating_integerSizex)
         self.arraySizey.editingFinished.connect(self.validating_integerSizey)
@@ -329,7 +357,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "nilab_SLM"))
         self.label.setText(_translate("MainWindow", "SLM"))
        # self.pixelpitch.setText(_translate("MainWindow", "12.5"))
         self.label_2.setText(_translate("MainWindow", " pixel pitch (micron)"))
@@ -343,10 +371,12 @@ class Ui_MainWindow(object):
         self.arraySizeBit.setItemText(1, _translate("MainWindow", "12"))
         self.arraySizeBit.setItemText(2, _translate("MainWindow", "13"))
         self.arraySizeBit.setItemText(3, _translate("MainWindow", "14"))
-        self.Button_calculate.setStatusTip(_translate("MainWindow", "Calculate the SLM phase and save it in a csv file."))
+        self.Button_calculate.setStatusTip(_translate("MainWindow", "Calculate the SLM phase and you can choose to save it in a csv file."))
         self.Button_calculate.setText(_translate("MainWindow", "Calculate"))
         self.Button_send.setStatusTip(_translate("MainWindow", "Load the csv file and send it to SLM."))
-        self.Button_send.setText(_translate("MainWindow", "Send"))
+        self.Button_send.setText(_translate("MainWindow", "Load and Send"))
+        self.Button_load.setStatusTip(_translate("MainWindow", "Load the config and phase file, add aberration correction, then save."))
+        self.Button_load.setText(_translate("MainWindow", "Load"))
         self.label_9.setText(_translate("MainWindow", "Array spacing (micron)"))
         self.label_10.setText(_translate("MainWindow", "Tweezer "))
         self.label_11.setText(_translate("MainWindow", "Array size"))
@@ -360,6 +390,7 @@ class Ui_MainWindow(object):
        # self.Loop.setText(_translate("MainWindow", "25"))
         self.mask.setText(_translate("MainWindow", "Use Aperture?"))
         self.save.setText(_translate("MainWindow", "Save?"))
+        self.saveConfig.setText(_translate("MainWindow", "Save config?"))
         self.label_17.setText(_translate("MainWindow", "Distance from origin (micron)"))
         self.label_18.setText(_translate("MainWindow", "x"))
         self.label_19.setText(_translate("MainWindow", "y"))
@@ -371,6 +402,7 @@ class Ui_MainWindow(object):
         self.label_22.setText(_translate("MainWindow", "Aberration"))
         self.label_23.setText(_translate("MainWindow", "Zernike index"))
         self.label_24.setText(_translate("MainWindow", "Percent"))
+        self.label_25.setText(_translate("MainWindow", "Display"))
 
     def calculate(self):
         if self.pixelpitch.text() == "":
@@ -440,6 +472,11 @@ class Ui_MainWindow(object):
             else:
                 save = 0
             print("Save?", save)
+            if self.saveConfig.isChecked():
+                saveConfig = 1
+            else:
+                saveConfig = 0
+            print("Save Config?", saveConfig)
             #slm = slmpy.SLMdisplay(isImageLock=False)
             slm = slmpy.SLMdisplay()
             resX, resY = slm.getSize()
@@ -490,19 +527,61 @@ class Ui_MainWindow(object):
             if save:
                 LS = LoadAndSave()
                 LS.SaveFileDialog(SLM_Screen_WGS)
-
+            if saveConfig:
+                ConfigFile = {}
+                ConfigFile["pixel pitch"] = pixelpitch
+                ConfigFile["arr spacing x"] = spacingx
+                ConfigFile["arr spacing y"] = spacingy
+                ConfigFile["distance from origin"] = distance
+                ConfigFile["lattice geometry"] = lattice
+                ConfigFile["array size x"] = arraysizex
+                ConfigFile["array size y"] = arraysizey
+                ConfigFile["FFT grid size (bit)"] = arraysizeBit
+                ConfigFile["WGS threshold"] = threshold
+                ConfigFile["Loop"] = Loop
+                ConfigFile["Focal length"] = focallength
+                ConfigFile["Magnefication"] = magnification
+                ConfigFile["wave length"] = wavelength
+                ConfigFile["beam waist"] = beamwaist
+                ConfigFile["aperture size"] = maskradius
+                ConfigFile["use aperture?"] = mask
+                ConfigFile["SLM resX"] = resX
+                ConfigFile["SLM resY"] = resY
+                LS = LoadAndSave()
+                LS.SaveConfigFileDialog(ConfigFile)
 
 
     def send(self):
-        if os.path.isfile('SLM.csv'):
-           slm = slmpy.SLMdisplay(isImageLock=True)
-           SLM_data = genfromtxt('SLM.csv', delimiter=',')
-           SLM_IMG = SLM_data.astype('uint8')
-           slm.updateArray(SLM_IMG)
-           time.sleep(5)
-           slm.close()
-        else:
-            print("File not exist! You need to generate a SLM.csv file first!")
+        LS = LoadAndSave()
+        SLM_phase_data = LS.LoadFileDialog()
+        SLM_bit = np.around((SLM_phase_data + np.pi) / (2 * np.pi) * 255).astype('uint8')
+        slm = slmpy.SLMdisplay(isImageLock=True)
+        slm.updateArray(SLM_bit)
+        time.sleep(5)
+        slm.close()
+
+    def load(self):
+        if self.zind.text() == "":
+            print("Please input zernike index input!")
+        elif self.zindpercent.text() == "":
+            print("Please input the percent !")
+        ind_Zernike = int(self.zind.text())
+        percent = float(self.zindpercent.text())
+        LS = LoadAndSave()
+        print("We first load SLM config:")
+        SLMconfig = LS.LoadConfigFileDialog()
+        print(SLMconfig)
+        SLMResX = SLMconfig['SLM resX']
+        SLMResY = SLMconfig['SLM resY']
+        pixelpitch = SLMconfig['pixel pitch']
+        aperture_radius = SLMconfig['aperture size']
+        print("Next, we load the phase file:")
+        SLM_screen_WGS = LS.LoadFileDialog()
+        myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
+        SLM_aberr_screen = myOberrationCorr.phase_Zernike(Plot=True, Save=False)
+        SLM_screen_WGS_aberr = SLM_screen_WGS + SLM_aberr_screen
+        print("Finally, we add the oberration and save the phase file.")
+        LS.SaveFileDialog(SLM_screen_WGS_aberr)
 
     def validating_integerLoop(self):
         validating_rule = QDoubleValidator(0, 100, 0)
