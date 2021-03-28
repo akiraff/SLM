@@ -123,6 +123,7 @@ class IMG:
         # This function is used to generate the Kagome geometry in the focal plane
         # Parameters definition are the same as Rec_lattice
         targetAmp = np.zeros((int(self.ImgResY), int(self.ImgResX)))
+        targetAmpMask = np.zeros((int(self.ImgResY), int(self.ImgResX)))
         dm = round(distance / np.sqrt(2) / self.Focalpitchx)
         dn = round(distance / np.sqrt(2) / self.Focalpitchy)
         mcenter = self.ImgResX / 2
@@ -143,18 +144,36 @@ class IMG:
        # print(Kagome_cell)
         # Launch Kagome cell onto targetAmp
         for cell_value in Kagome_cell.values():
-           # print(cell_value)
             site_loc = cell_value[0:2]
             col = site_loc[0]
             row = site_loc[1]
+            #targetAmp[row, col] = cell_value[2]
+            targetAmpMask[row, col] = 1
+        TraplocMask = np.argwhere(targetAmpMask == 1)
+        TraplocMask_order = TraplocMask[TraplocMask[:,0].argsort()]
+       # print(TraplocMask_order)
+        TraplocMask_firstRow = TraplocMask_order[-arraysize[1]:,:]
+       # print(TraplocMask_firstRow)
+        TraplocMask_firstRow_orderbyCol = TraplocMask_firstRow[TraplocMask_firstRow[:,1].argsort()][:, 1]
+       # print(TraplocMask_firstRow_orderbyCol)
+        col_min = TraplocMask_firstRow_orderbyCol[0]
+        col_spacing = np.abs(TraplocMask_firstRow_orderbyCol[1]-TraplocMask_firstRow_orderbyCol[0])
+
+        for cell_value in Kagome_cell.values():
+            site_loc = cell_value[0:2]
+            col = site_loc[0]
+            row = site_loc[1]
+            if col < col_min:
+                col = int(col + arraysize[0]*col_spacing)
             targetAmp[row, col] = cell_value[2]
+
         Traploc = np.argwhere(targetAmp == 1)
         Traprow = Traploc[:, 0]
         Trapcol = Traploc[:, 1]
         startRow_display = int(np.min(Traprow) - spacingy)
-        endRow_display = int(self.ImgResY / 2)
+        endRow_display = int(self.ImgResY / 2 + spacingy)
         startCol_display = int(np.min(Trapcol) - spacingx)
-        endCol_display = int(self.ImgResX / 2)
+        endCol_display = int(self.ImgResX / 2 + spacingx)
         location = [startRow_display, endRow_display, startCol_display, endCol_display]
         if Plot:
             self.plotFocalplane(targetAmp, location)
