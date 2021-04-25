@@ -478,10 +478,11 @@ class Ui_MainWindow(object):
                 saveConfig = 0
             print("Save Config?", saveConfig)
             #slm = slmpy.SLMdisplay(isImageLock=False)
-            slm = slmpy.SLMdisplay()
-            resX, resY = slm.getSize()
+           # slm = slmpy.SLMdisplay()
+            # Directly specify the resolution corresponding to the Hamamastu SLM dimension
+            resX, resY = 1272, 1024
             res = np.min([resX, resY])
-            slm.close()
+           # slm.close()
             print("resX =: ", resX)
             print("resY=: ", resY)
             myIMG = IMGpy.IMG(pixelpitch, [arraysizeBit, arraysizeBit], beamwaist, focallength, magnification,
@@ -524,6 +525,7 @@ class Ui_MainWindow(object):
             myIMG.plotFocalplane(fftSLM_IMG_Amp_norm, locationIMG)
             print("location = ", location)
             print("locationIMG = ", locationIMG)
+            print("Phase image shape:", SLM_Screen_WGS.shape)
             if save:
                 LS = LoadAndSave()
                 LS.SaveFileDialog(SLM_Screen_WGS)
@@ -554,9 +556,17 @@ class Ui_MainWindow(object):
     def send(self):
         LS = LoadAndSave()
         SLM_phase_data = LS.LoadFileDialog()
-        SLM_bit = np.around((SLM_phase_data + np.pi) / (2 * np.pi) * 255).astype('uint8')
+        SLM_bit = np.around((SLM_phase_data + np.pi) / (2 * np.pi) * 255)
+        SLM_corrPattern = LS.LoadCorrFileDialog()
+        SLM_corrected = SLM_bit + SLM_corrPattern
+        SLM_wrappedPattern = np.mod(SLM_corrected, 256)
+        # 1038 nm
+        value_for2pi = 212
+        SLM_displayPattern = np.around(SLM_wrappedPattern*value_for2pi/255).astype('uint8')
+        #print(np.max(SLM_displayPattern))
+        #print(np.min(SLM_displayPattern))
         slm = slmpy.SLMdisplay(isImageLock=True)
-        slm.updateArray(SLM_bit)
+        slm.updateArray(SLM_displayPattern)
         time.sleep(5)
         slm.close()
 
