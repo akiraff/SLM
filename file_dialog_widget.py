@@ -1,15 +1,15 @@
 from PyQt5.QtWidgets import QWidget, QFileDialog
 import numpy as np
 from pathlib import Path
-
+from PIL import Image
 
 class LoadAndSave(QWidget):
 
     def __init__(self):
         super().__init__()
         self.title = 'SLM files:'
-        self.left = 10
-        self.top = 10
+        self.left = 20
+        self.top = 20
         self.width = 640
         self.height = 480
 
@@ -37,6 +37,15 @@ class LoadAndSave(QWidget):
         file_name, _ = QFileDialog.getOpenFileName(self, "Load SLM config files:", "", "SLM Config Files (*.npy)")
         SLMconfig = np.load(file_name, allow_pickle=True).item()
         return SLMconfig
+
+    def LoadCorrFileDialog(self):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load SLM correction files:", "", "SLM correction Files (*.bmp)")
+        image = Image.open(file_name)
+        corr_data = np.asarray(image)
+        return corr_data
 
     def SaveFileDialog(self, SLM_screen_WGS):
         self.initUI()

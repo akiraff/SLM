@@ -226,7 +226,7 @@ class Tweezer:
         startCol = self.m-self.arraysizex*spacingx
         endCol = self.m
         if startRow < 0 or startCol < 0:
-            raise Exception("Sorry, too big an array, SLM cannot handle, consider shrinking the spacing or the size!")
+            raise Exception("Sorry, too big an array, consider shrinking the spacing or the size!")
         return int(startRow), int(endRow), int(startCol), int(endCol)
 
     def assembleLatticeFromUnitcell(self, spacing, p_vector, unitcell, num_cell_h, num_cell_v):

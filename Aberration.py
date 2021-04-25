@@ -73,3 +73,11 @@ percent = 0.01
 myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
 SLM_screen = myOberrationCorr.phase_Zernike(Plot = True, Save = True)
 """""
+"""""
+a = np.array([[9, 2, 3],
+           [4, 5, 6],
+           [7, 0, 5]])
+a=a[a[:,1].argsort()]
+print(a)
+"""""
+
