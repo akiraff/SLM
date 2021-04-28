@@ -73,7 +73,7 @@ class SLMframe(wx.Frame):
 
 class SLMdisplay:
     """Interface for sending images to the display frame."""
-    def __init__(self ,monitor = 0, isImageLock = False):
+    def __init__(self ,monitor = 1, isImageLock = False):
         self.isImageLock = isImageLock            
         self.monitor = monitor
         # Create the thread in which the window app will run
