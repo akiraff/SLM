@@ -130,8 +130,6 @@ class IMG:
         ncenter = self.ImgResY / 2
         m = mcenter - dm
         n = ncenter - dn
-        totalsitesnum = arraysize[0] * arraysize[1]
-        intensityPerSite = 1 / totalsitesnum
         spacingx = round(spacing[0] / self.Focalpitchx)
         spacingy = round(spacing[1] / self.Focalpitchy)
         print([spacingx, spacingy])

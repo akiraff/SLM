@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
     #           displayMode = 0, not connect to SLM, calculate Phase pattern through phase-fixed WGS
     def setupUi(self, MainWindow):
         # Please set displayMode here:
-        self.displayMode = 1
+        self.displayMode = 0
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(743, 531)
@@ -363,10 +363,11 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        self.Button_calculate.clicked.connect(self.calculate)
         if self.displayMode:
             self.Button_send.clicked.connect(self.send)
             self.Button_stop.clicked.connect(self.stop)
+        else:
+            self.Button_calculate.clicked.connect(self.calculate)
         self.Button_load.clicked.connect(self.load)
         self.Loop.editingFinished.connect(self.validating_integerLoop)
         self.arraySizex.editingFinished.connect(self.validating_integerSizex)
