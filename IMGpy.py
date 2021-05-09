@@ -137,7 +137,7 @@ class IMG:
         # Build Kagome cell
         Trap = Tweezer([m, n], arraysize)
         p_vector, unitcell, num_cell_h, num_cell_v = Trap.unitcell_Kagome([spacingx, spacingy], Triangle)
-        print(p_vector)
+        #print(p_vector)
         Kagome_cell = Trap.assembleLatticeFromUnitcell([spacingx, spacingy], p_vector, unitcell, num_cell_h, num_cell_v)
        # print(Kagome_cell)
         # Launch Kagome cell onto targetAmp
@@ -145,15 +145,18 @@ class IMG:
             site_loc = cell_value[0:2]
             col = site_loc[0]
             row = site_loc[1]
-            #targetAmp[row, col] = cell_value[2]
             targetAmpMask[row, col] = 1
         TraplocMask = np.argwhere(targetAmpMask == 1)
+        # order TraplocMask according to row, ascend
         TraplocMask_order = TraplocMask[TraplocMask[:,0].argsort()]
-       # print(TraplocMask_order)
-        TraplocMask_firstRow = TraplocMask_order[-arraysize[1]:,:]
-       # print(TraplocMask_firstRow)
+        # get first row of the ordered TraplocMask, odd array is converted to even array with 1 site bigger
+        if arraysize[0] % 2 == 0:
+           TraplocMask_firstRow = TraplocMask_order[-arraysize[0]:,:]
+        else:
+           TraplocMask_firstRow = TraplocMask_order[-(arraysize[0] + 1):, :]
+        # Order the first row according to col, ascend
         TraplocMask_firstRow_orderbyCol = TraplocMask_firstRow[TraplocMask_firstRow[:,1].argsort()][:, 1]
-       # print(TraplocMask_firstRow_orderbyCol)
+        # get the min col for the first row and col spacing
         col_min = TraplocMask_firstRow_orderbyCol[0]
         col_spacing = np.abs(TraplocMask_firstRow_orderbyCol[1]-TraplocMask_firstRow_orderbyCol[0])
 
@@ -161,8 +164,12 @@ class IMG:
             site_loc = cell_value[0:2]
             col = site_loc[0]
             row = site_loc[1]
+            # odd array will be converted to even array with 1 site bigger
             if col < col_min:
-                col = int(col + arraysize[0]*col_spacing)
+                if arraysize[0] % 2 == 0:
+                   col = int(col + arraysize[0]*col_spacing)
+                else:
+                   col = int(col + (arraysize[0] + 1) * col_spacing)
             targetAmp[row, col] = cell_value[2]
 
         Traploc = np.argwhere(targetAmp == 1)
@@ -206,6 +213,59 @@ class IMG:
             self.plotFocalplane(targetAmp_diffrac, location)
         return targetAmp_diffrac
 
+    def modify_targetAmp_sites(self, targetAmp, spacing, intenArray, location, Plot = True):
+        # This function receives a measured intensity array. This array is ordered by the following procedure:
+        # The array starts from the point most closed to the origin, then ordered row by row.
+        # X is column
+        col = np.size(targetAmp, axis=1)
+        # Y is row
+        row = np.size(targetAmp, axis=0)
+        # Find trap location
+        Traploc = np.argwhere(targetAmp == 1)
+        Traprow = Traploc[:, 0]
+        Trapcol = Traploc[:, 1]
+        # Calculate the distance of the current trap location to origin.
+        centerX = col/2
+        centerY = row/2
+        Trapd_origin = ((Trapcol - centerX) ** 2 + (Traprow - centerY) ** 2) ** (0.5)
+        # Add rloc to trap location
+        TrapInfo = np.column_stack((Traploc, Trapd_origin))
+        # Sort Trap according to row
+        TrapInfo_sortByrow = TrapInfo[TrapInfo[:, 0].argsort()]
+        # Find where row end and start
+        sz_row = np.size(TrapInfo_sortByrow, axis=0)
+        rowTrap = TrapInfo_sortByrow[:, 0]
+        row_end = np.array([])
+        spacingy = round(spacing[1] / self.Focalpitchy)
+        for index in range(sz_row):
+            row_cur = index
+            if index < sz_row - 1:
+                row_next = index + 1
+                if np.abs(rowTrap[row_next] - rowTrap[row_cur]) > spacingy/2:
+                    row_end = np.append(row_end, row_cur)
+        row_end = np.append(row_end, sz_row)
+        row_start = np.concatenate(([0], np.delete(row_end, len(row_end) - 1) + 1))
+        # preallocate TrapInfo_sortfinal
+        TrapInfo_sortfinal = np.zeros_like(TrapInfo_sortByrow)
+        for index in range(len(row_end)):
+            # +1 here to make sure we get the row up to row_end
+            trapRow = TrapInfo_sortByrow[int(row_start[index]):int(row_end[index]) + 1, :]
+            # sort according to distance to the origin
+            trapRow_sort = trapRow[trapRow[:, 2].argsort()]
+            TrapInfo_sortfinal[int(row_start[index]):int(row_end[index]) + 1, :] = trapRow_sort
+        # Now populate the modified targetAmp with the intenArray
+        Trap_Inten = np.divide(1, intenArray)
+        targetAmp_mod = np.zeros_like(targetAmp)
+        if len(Trap_Inten) != sz_row:
+            raise Exception("Input trap intensity number does not match the array under consideration!")
+        for index in range(sz_row):
+            TrapInfo_row = TrapInfo_sortfinal[index,:]
+            row = TrapInfo_row[0]
+            col = TrapInfo_row[1]
+            targetAmp_mod[row, col] = Trap_Inten[index]
+        return targetAmp_mod
+
+
 class Tweezer:
     def __init__(self,location,arraysize):
         # Here the location is chosen for the point nearest to the origin (zero order), I choose this point to locate at
@@ -231,8 +291,18 @@ class Tweezer:
         # This function assembles a lattice from unit cell using primitive vector
         spacingh = spacing[0]
         spacingv = spacing[1]
-        xtranslate = int(round(self.arraysizex / num_cell_h - 1))
-        ytranslate = int(round(self.arraysizey / num_cell_v - 1))
+        # Define xtranslate and ytranslate according to whether the arraysize is even or odd
+        # Odd array will be converted to the even array with 1 site bigger
+        # This is applied to the current case: Kagome cell with 2 by 2 unit cell
+        # To incorporate other geometries, need to make changes here
+        if self.arraysizex % 2 == 0:
+           xtranslate = int(round(self.arraysizex / num_cell_h - 1))
+        else:
+           xtranslate = int(round((self.arraysizex + 1) / num_cell_h - 1))
+        if self.arraysizey % 2 ==0:
+           ytranslate = int(round(self.arraysizey / num_cell_v - 1))
+        else:
+           ytranslate = int(round((self.arraysizey + 1) / num_cell_v - 1))
         cell = {}
         for site_info, site_value in unitcell.items():
             site_loc = site_value[0:2]

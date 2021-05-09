@@ -637,7 +637,7 @@ class Ui_MainWindow(object):
             self.Loop.setText("")
 
     def validating_integerSizex(self):
-        validating_rule = QDoubleValidator(0, 500, 0)
+        validating_rule = QDoubleValidator(2, 500, 0)
       #  print(validating_rule.validate(self.arraySizex.text(), 14))
         if validating_rule.validate(self.arraySizex.text(), 14)[0] == QValidator.Acceptable:
             self.arraySizex.setFocus()
@@ -645,7 +645,7 @@ class Ui_MainWindow(object):
             self.arraySizex.setText("")
 
     def validating_integerSizey(self):
-        validating_rule = QDoubleValidator(0, 500, 0)
+        validating_rule = QDoubleValidator(2, 500, 0)
       #  print(validating_rule.validate(self.arraySizey.text(), 14))
         if validating_rule.validate(self.arraySizey.text(), 14)[0] == QValidator.Acceptable:
             self.arraySizey.setFocus()
