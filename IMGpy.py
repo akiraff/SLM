@@ -103,6 +103,7 @@ class IMG:
         n = ncenter - dn
         totalsitesnum = arraysize[0]*arraysize[1]
         intensityPerSite = 1/totalsitesnum
+        #intensityPerSite = 1
         spacingx = round(spacing[0]/self.Focalpitchx)
         spacingy = round(spacing[1]/self.Focalpitchy)
         print([spacingx,spacingy])
@@ -117,7 +118,7 @@ class IMG:
         location = [startRow_display, endRow_display, startCol_display, endCol_display]
         if Plot:
             self.plotFocalplane(targetAmp, location)
-        return self.Focalpitchx,self.Focalpitchy, targetAmp, location
+        return self.Focalpitchx, self.Focalpitchy, targetAmp, location
 
     def initFocalImage_KagomeLattice(self, distance, spacing, arraysize, Triangle = False, Plot = True):
         # This function is used to generate the Kagome geometry in the focal plane
@@ -216,12 +217,15 @@ class IMG:
     def modify_targetAmp_sites(self, targetAmp, spacing, intenArray, location, Plot = True):
         # This function receives a measured intensity array. This array is ordered by the following procedure:
         # The array starts from the point most closed to the origin, then ordered row by row.
+        # Then it will output the corresponding foci amp corresponding to this input intensity array
         # X is column
         col = np.size(targetAmp, axis=1)
         # Y is row
         row = np.size(targetAmp, axis=0)
         # Find trap location
-        Traploc = np.argwhere(targetAmp == 1)
+        targetAmpmask = (targetAmp > 0) * 1
+        Traploc = np.argwhere(targetAmpmask == 1)
+        #print(Traploc)
         Traprow = Traploc[:, 0]
         Trapcol = Traploc[:, 1]
         # Calculate the distance of the current trap location to origin.
@@ -230,8 +234,9 @@ class IMG:
         Trapd_origin = ((Trapcol - centerX) ** 2 + (Traprow - centerY) ** 2) ** (0.5)
         # Add rloc to trap location
         TrapInfo = np.column_stack((Traploc, Trapd_origin))
-        # Sort Trap according to row
-        TrapInfo_sortByrow = TrapInfo[TrapInfo[:, 0].argsort()]
+        # Sort Trap according to row, descending
+        TrapInfo_sortByrow = TrapInfo[(-TrapInfo[:, 0]).argsort()]
+       # print(TrapInfo_sortByrow)
         # Find where row end and start
         sz_row = np.size(TrapInfo_sortByrow, axis=0)
         rowTrap = TrapInfo_sortByrow[:, 0]
@@ -254,16 +259,27 @@ class IMG:
             trapRow_sort = trapRow[trapRow[:, 2].argsort()]
             TrapInfo_sortfinal[int(row_start[index]):int(row_end[index]) + 1, :] = trapRow_sort
         # Now populate the modified targetAmp with the intenArray
-        Trap_Inten = np.divide(1, intenArray)
-        targetAmp_mod = np.zeros_like(targetAmp)
+        Trap_Inten = intenArray/np.sum(intenArray)
+        targetAmp_foci = np.zeros_like(targetAmp)
+       # print(sz_row)
+       # print(len(Trap_Inten))
+       # print(TrapInfo_sortfinal)
+       # print(Trap_Inten)
         if len(Trap_Inten) != sz_row:
             raise Exception("Input trap intensity number does not match the array under consideration!")
         for index in range(sz_row):
             TrapInfo_row = TrapInfo_sortfinal[index,:]
+           # print(TrapInfo_row)
             row = TrapInfo_row[0]
+           # print(row)
             col = TrapInfo_row[1]
-            targetAmp_mod[row, col] = Trap_Inten[index]
-        return targetAmp_mod
+           # print(col)
+           # print(Trap_Inten[index])
+            targetAmp_foci[int(row), int(col)] = np.sqrt(Trap_Inten[index])
+
+        if Plot:
+            self.plotFocalplane(targetAmp_foci, location)
+        return targetAmp_foci
 
 
 class Tweezer:
@@ -368,15 +384,19 @@ class WGS:
         self.initGaussianAmp = initGaussianAmp
         self.initGaussianPhase = initGaussianPhase
         self.initGaussian = np.multiply(self.initGaussianAmp, np.exp(1j*self.initGaussianPhase))
-        self.targetAmp = targetAmp
+        # Intensity normalized to 1
+        self.targetAmp = targetAmp/np.sqrt(np.sum(np.square(targetAmp)))
         self.targetAmpmask = (self.targetAmp>0)*1
         self.totalsites = np.count_nonzero(self.targetAmp)
 
 
     def fftLoop(self, Loop, threshold, Plot=True):
+        # Uniform WGS
         SLM_Field = self.initGaussian
         count = 0
         g_coeff0 = 1
+        Focal_phase = 0
+        fftAmp = 0
         non_uniform = np.zeros(Loop)
         while count < Loop:
             fftSLM = sp.fft.fft2(SLM_Field)
@@ -386,8 +406,7 @@ class WGS:
             fftAmp = np.abs(fftSLMShift_norm)
             fftAmp_foci = np.multiply(fftAmp, self.targetAmpmask)
             non_uniform[count] = self.nonUniformity(fftAmp_foci)
-            totalsites = np.count_nonzero(self.targetAmp)
-            fftAmp_foci_avg = np.multiply(np.sum(fftAmp_foci) / totalsites, self.targetAmpmask)
+            fftAmp_foci_avg = np.multiply(np.sum(fftAmp_foci) / self.totalsites, self.targetAmpmask)
             g_coeff = np.multiply(np.divide(fftAmp_foci_avg, fftAmp_foci, out=np.zeros_like(fftAmp_foci_avg),
                                           where=fftAmp_foci != 0),g_coeff0)
             Focal_Amp = np.multiply(self.targetAmp, g_coeff)
@@ -406,9 +425,9 @@ class WGS:
 
         SLM_Amp = np.abs(SLM_Field)
         SLM_Phase = np.angle(SLM_Field)
+        new_non_uniform = np.delete(non_uniform, 0)
+        new_non_uniform_norm = new_non_uniform / np.max(new_non_uniform)
         if Plot:
-            new_non_uniform = np.delete(non_uniform,0)
-            new_non_uniform_norm = new_non_uniform/np.max(new_non_uniform)
             plt.plot(new_non_uniform_norm)
             plt.grid()
             plt.yscale('log')
@@ -417,6 +436,70 @@ class WGS:
             plt.show()
         return SLM_Amp, SLM_Phase, fftAmp, new_non_uniform_norm
 
+    def fftLoop_adapt(self, SLM_Phase0, targetAmp_foci, Loop, threshold, Plot=True):
+        # Here targetAmp is the amplitude of the pre-set uniform array
+        # targetAmp_foci is the measured amplitude at the focal point
+        # SLM_phase is the calculated phase through WGS assuming uniform intensity distribution
+        # This function is used to compensate the measured intensity non-uniformity from Thorcam
+        SLM_Amp = self.initGaussianAmp
+        if np.size(SLM_Amp) != np.size(SLM_Phase0):
+            raise Exception("Input SLM phase matrix does not match its ampitude matrix!")
+        SLM_Field = np.multiply(SLM_Amp, np.exp(1j*SLM_Phase0))
+        count = 0
+        g_coeff0 = 1
+        Focal_phase = 0
+        fftAmp = 0
+        targetInt = np.square(targetAmp_foci)/np.sum(np.square(targetAmp_foci))
+        targetInt_nonzero = np.abs(targetInt[targetInt != 0])
+        print(targetInt_nonzero)
+        targetInt_avg = np.multiply(np.sum(targetInt) / self.totalsites, self.targetAmpmask)
+        targetAmp_adapt = np.multiply(np.sqrt(np.divide(targetInt_avg, targetInt, out=np.zeros_like(targetInt_avg),
+                                            where=targetInt != 0)), self.targetAmp)
+        targetAmp_adapt_weightfactor = np.abs(targetAmp_adapt)/np.sum(np.abs(targetAmp_adapt))
+        non_uniform = np.zeros(Loop)
+        while count < Loop:
+            fftSLM = sp.fft.fft2(SLM_Field)
+            fftSLMShift = sp.fft.fftshift(fftSLM)
+            fftSLM_norm = np.sqrt(np.sum(np.square(np.abs(fftSLMShift))))
+            fftSLMShift_norm = fftSLMShift / fftSLM_norm
+            fftAmp = np.abs(fftSLMShift_norm)
+            fftAmp_foci = np.multiply(fftAmp, self.targetAmpmask)
+            #non_uniform[count] = self.nonUniformity_adapt(fftAmp_foci, targetAmp_adapt)
+            non_uniform[count], inten_foci_nonzero, inten_adapt_nonzero = self.nonUniformity_adapt(fftAmp_foci, targetAmp_adapt)
+            fftAmp_foci_avg = np.multiply(np.sum(fftAmp_foci), self.targetAmpmask)
+            g_coeff = np.multiply(np.divide(np.multiply(fftAmp_foci_avg, targetAmp_adapt_weightfactor), fftAmp_foci, out=np.zeros_like(fftAmp_foci_avg),
+                                            where=fftAmp_foci != 0), g_coeff0)
+
+            Focal_Amp = np.multiply(targetAmp_adapt, g_coeff)
+           # Focal_Amp = targetAmp_adapt
+            if non_uniform[count] > threshold:
+            #if count == 0:
+                Focal_phase0 = np.angle(fftSLMShift_norm)
+            else:
+                Focal_phase0 = Focal_phase
+            Focal_phase = Focal_phase0
+            Focal_Field = np.multiply(Focal_Amp, np.exp(1j * Focal_phase))
+            SLM_Field = sp.fft.ifft2(sp.fft.ifftshift(Focal_Field))
+            SLM_Phase = np.angle(SLM_Field)
+            SLM_Amp = self.initGaussianAmp
+            SLM_Field = np.multiply(SLM_Amp, np.exp(1j * SLM_Phase))
+            g_coeff0 = g_coeff
+            count += 1
+        print(inten_foci_nonzero)
+        print(inten_adapt_nonzero)
+        print(non_uniform)
+        SLM_Amp = np.abs(SLM_Field)
+        SLM_Phase = np.angle(SLM_Field)
+       # new_non_uniform = np.delete(non_uniform, 0)
+        if Plot:
+            plt.plot(non_uniform)
+            plt.grid()
+            plt.yscale('log')
+            plt.xlabel('Iteration')
+            plt.ylabel('Non-uniformity')
+            plt.show()
+        return SLM_Amp, SLM_Phase, fftAmp, non_uniform, targetAmp_adapt
+
     def nonUniformity(self, Amp_foci):
         # This function calculate the uniformity of the tweezer traps at the focal point
         # Amp_foci is the field amplitude at the focal plane. It is a matrix
@@ -424,6 +507,17 @@ class WGS:
         Inten_foci_avg = np.multiply(np.sum(Inten_foci)/self.totalsites, self.targetAmpmask)
         non_Uniform = np.sqrt((np.sum(np.square(Inten_foci-Inten_foci_avg)))/self.totalsites)
         return non_Uniform
+
+    def nonUniformity_adapt(self, Amp_foci, targetAmp_adapt):
+        # This function calculates the nonUniformity with a non-uniform targetAmp distribution
+        # Amp_foci is the field amplitude at the focal plane. It is a matrix
+        # targetAmp_foci is the amplitude of measured intensity value.
+        Inten_foci = np.square(Amp_foci) / np.sum(np.square(Amp_foci))
+        Inten_foci_nonzero = np.abs(Inten_foci[Inten_foci != 0])
+        Inten_adapt = np.square(targetAmp_adapt)/np.sum(np.square(targetAmp_adapt))
+        Inten_adapt_nonzero = np.abs(Inten_adapt[Inten_adapt != 0])
+        non_Uniform = np.sqrt((np.sum(np.square(Inten_foci_nonzero - Inten_adapt_nonzero)))) / self.totalsites / np.mean(Inten_adapt_nonzero)
+        return non_Uniform, Inten_foci_nonzero, Inten_adapt_nonzero
 
     def SLM_IMG(self, SLM_Phase, SLMResX, SLMResY, Plot=True):
         # This function is to crop the center pixel area to fit to the SLM screen
@@ -458,6 +552,7 @@ class WGS:
         startCol_screen = SLMResX/2-round(col_SLM_bit/2)
         endCol_screen = SLMResX/2+round(col_SLM_bit/2)
         SLM_screen[int(startRow_screen):int(endRow_screen), :][:, int(startCol_screen):int(endCol_screen)] = SLM_bit
+
         if Plot:
             colIMG = np.size(SLM_screen, axis=1)
             rowIMG = np.size(SLM_screen, axis=0)

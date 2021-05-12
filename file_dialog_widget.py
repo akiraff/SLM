@@ -22,13 +22,25 @@ class LoadAndSave(QWidget):
         self.initUI()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getOpenFileName(self, "Load WGS phase files:", "", "SLM Files (*.csv)")
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load WGS phase files:", "", "SLM screen Files (*.csv)")
         if file_name:
             print(file_name)
         file_path = Path(file_name)
         with open(file_path, newline='') as csvfile:
             SLM_screen_WGS = np.genfromtxt(csvfile, delimiter=',')
         return SLM_screen_WGS
+
+    def LoadPhaseFileDialog(self):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load WGS phase files:", "", "SLM WGS phase Files (*.csv)")
+        if file_name:
+            print(file_name)
+        file_path = Path(file_name)
+        with open(file_path, newline='') as csvfile:
+            SLM_Phase = np.genfromtxt(csvfile, delimiter=',')
+        return SLM_Phase
 
     def LoadConfigFileDialog(self):
         self.initUI()
@@ -51,8 +63,15 @@ class LoadAndSave(QWidget):
         self.initUI()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save WGS phase file:", "", "SLM Files (*.csv)")
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save WGS phase file:", "", "SLM screen Files (*.csv)")
         np.savetxt(file_name, SLM_screen_WGS, delimiter=",")
+
+    def SavePhaseFileDialog(self, SLM_phase):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save WGS phase file:", "", "SLM phase WGS Files (*.csv)")
+        np.savetxt(file_name, SLM_phase, delimiter=",")
 
     def SaveConfigFileDialog(self, SLMconfigFile):
         self.initUI()
