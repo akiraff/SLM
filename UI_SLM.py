@@ -608,6 +608,11 @@ class Ui_MainWindow(object):
 
 
     def calculateAdapt(self):
+        # check the user whether he/she wants to save
+        if not self.save.isChecked():
+            print("Do you want to save calculated phase pattern? If so, please toggle the save checkbox!")
+        if not self.saveConfig.isChecked():
+            print("Do you want to save the config file for your calculation? If so, please toggle the saveConfig checkbox!")
         if self.threshold.text() == "":
             print("Please specify the threshold for the algorithm!")
         elif self.Loop.text() == "":
@@ -671,14 +676,19 @@ class Ui_MainWindow(object):
                                                                                                Triangle=True,
                                                                                                Plot=True)
             print("Focal pitch size: ", Focalpitchx)
-            intenArray = np.divide([0.1048, 0.1083, 0.1156, 0.1077, 0.1042, 0.1161, 0.1136, 0.1300, 0.0998], 1)
+
+            print("Now we load measured focal plane intensity file:")
+            intenArray = LS.LoadIntensityFileDialog()
+            print(intenArray)
             targetAmp_foci = myIMG.modify_targetAmp_sites(targetAmp, [spacingx, spacingy], intenArray, location)
             print("Now we load phase pattern from the previous iteration:")
             SLM_Phase = LS.LoadPhaseFileDialog()
+            # raise exception if the user loads the wrong file
+            if np.size(SLM_Phase) != np.size(targetAmp):
+                raise Exception("SLM phase file loaded does not match WGS config, you could load the wrong file, go check it!")
             WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
             SLM_Amp_adapt, SLM_Phase_adapt, Focal_Amp_adapt, non_uniform_adapt, targetAmp_adapt = WGScal.fftLoop_adapt(
                SLM_Phase, targetAmp_foci, Loop, threshold)
-            myIMG.plotSLMplane(SLM_Amp_adapt)
             myIMG.plotSLMplane(SLM_Amp_adapt)
             myIMG.plotSLMplane(SLM_Phase_adapt)
             myIMG.plotFocalplane(targetAmp_adapt, location)

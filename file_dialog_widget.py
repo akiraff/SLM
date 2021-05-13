@@ -22,7 +22,7 @@ class LoadAndSave(QWidget):
         self.initUI()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getOpenFileName(self, "Load WGS phase files:", "", "SLM screen Files (*.csv)")
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load WGS screen phase files:", "", "SLM screen Files (*.csv)")
         if file_name:
             print(file_name)
         file_path = Path(file_name)
@@ -41,6 +41,18 @@ class LoadAndSave(QWidget):
         with open(file_path, newline='') as csvfile:
             SLM_Phase = np.genfromtxt(csvfile, delimiter=',')
         return SLM_Phase
+
+    def LoadIntensityFileDialog(self):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load measured focal intensity files:", "", "Focal intensity Files (*.csv)")
+        if file_name:
+            print(file_name)
+        file_path = Path(file_name)
+        with open(file_path, newline='') as csvfile:
+            intenArray = np.genfromtxt(csvfile, delimiter=',')
+        return intenArray
 
     def LoadConfigFileDialog(self):
         self.initUI()
@@ -63,7 +75,7 @@ class LoadAndSave(QWidget):
         self.initUI()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save WGS phase file:", "", "SLM screen Files (*.csv)")
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save WGS screen phase file:", "", "SLM screen Files (*.csv)")
         np.savetxt(file_name, SLM_screen_WGS, delimiter=",")
 
     def SavePhaseFileDialog(self, SLM_phase):

@@ -103,13 +103,13 @@ class IMG:
         n = ncenter - dn
         totalsitesnum = arraysize[0]*arraysize[1]
         intensityPerSite = 1/totalsitesnum
-        #intensityPerSite = 1
         spacingx = round(spacing[0]/self.Focalpitchx)
         spacingy = round(spacing[1]/self.Focalpitchy)
         print([spacingx,spacingy])
         print(arraysize)
         Trap = Tweezer([m, n],arraysize)
         startRow, endRow, startCol, endCol = Trap.assembleRecLattice([spacingx, spacingy])
+        # get startRow to endRow-1
         targetAmp[startRow:endRow:spacingy,:][:, startCol:endCol:spacingx]=intensityPerSite**0.5
         startRow_display = int(startRow-spacingy)
         endRow_display = int(self.ImgResY/2)
@@ -449,6 +449,8 @@ class WGS:
         g_coeff0 = 1
         Focal_phase = 0
         fftAmp = 0
+        inten_foci_nonzero = 0
+        inten_adapt_nonzero = 0
         targetInt = np.square(targetAmp_foci)/np.sum(np.square(targetAmp_foci))
         targetInt_nonzero = np.abs(targetInt[targetInt != 0])
         print(targetInt_nonzero)
@@ -490,7 +492,6 @@ class WGS:
         print(non_uniform)
         SLM_Amp = np.abs(SLM_Field)
         SLM_Phase = np.angle(SLM_Field)
-       # new_non_uniform = np.delete(non_uniform, 0)
         if Plot:
             plt.plot(non_uniform)
             plt.grid()
