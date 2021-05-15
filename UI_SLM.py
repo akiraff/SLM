@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
     #           displayMode = 0, not connect to SLM, calculate Phase pattern through phase-fixed WGS
     def setupUi(self, MainWindow):
         # Please set displayMode here:
-        self.displayMode = 1
+        self.displayMode = 0
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(743, 531)
@@ -629,6 +629,7 @@ class Ui_MainWindow(object):
             print(SLMconfig)
             print("Now we load target Amp from last iteration:")
             targetAmp_adapt_lastiter = LS.LoadTargetAmpFileDialog()
+
             pixelpitch = SLMconfig['pixel pitch']
             spacingx = SLMconfig['arr spacing x']
             spacingy = SLMconfig['arr spacing y']
@@ -670,15 +671,36 @@ class Ui_MainWindow(object):
                                                                                                Plot=True)
             print("Focal pitch size: ", Focalpitchx)
 
+
+            # raise exception if the user loads the wrong file
+            try:
+                sz = np.size(targetAmp_adapt_lastiter)
+                if sz != np.size(targetAmp):
+                    raise ValueError("target Amp from last iteration does not match current target Amp, you load the "
+                                     "wrong the file!")
+            except ValueError as ve:
+                print(ve)
             print("Now we load measured focal plane intensity file:")
             intenArray = LS.LoadIntensityFileDialog()
+            # raise exception if the user loads the wrong file
+            try:
+                sz = np.size(intenArray)
+                if sz != np.multiply(arraysizex, arraysizey):
+                    raise ValueError("Input intensity array does not match the array size!")
+            except ValueError as ve:
+                print(ve)
             print(intenArray)
             targetAmp_foci = myIMG.modify_targetAmp_sites(targetAmp, [spacingx, spacingy], intenArray, location)
             print("Now we load phase pattern from the previous iteration:")
             SLM_Phase = LS.LoadPhaseFileDialog()
             # raise exception if the user loads the wrong file
-            if np.size(SLM_Phase) != np.size(targetAmp):
-                raise Exception("SLM phase file loaded does not match WGS config, you could load the wrong file, go check it!")
+            try:
+                sz = np.size(SLM_Phase)
+                if sz != np.size(targetAmp):
+                    raise ValueError("Input SLM phase matrix does not match its target amplitude matrix, you might "
+                                     "mistakenly load SLM screen file.")
+            except ValueError as ve:
+                print(ve)
             WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
             SLM_Amp_adapt, SLM_Phase_adapt, Focal_Amp_adapt, non_uniform_adapt, targetAmp_adapt = WGScal.fftLoop_adapt(
                SLM_Phase, targetAmp_foci, targetAmp_adapt_lastiter, Loop, threshold)

@@ -267,8 +267,6 @@ class IMG:
        # print(len(Trap_Inten))
        # print(TrapInfo_sortfinal)
        # print(Trap_Inten)
-        if len(Trap_Inten) != sz_row:
-            raise Exception("Input trap intensity number does not match the array under consideration!")
         for index in range(sz_row):
             TrapInfo_row = TrapInfo_sortfinal[index,:]
            # print(TrapInfo_row)
@@ -301,8 +299,11 @@ class Tweezer:
         endRow = self.n
         startCol = self.m-self.arraysizex*spacingx
         endCol = self.m
-        if startRow < 0 or startCol < 0:
-            raise Exception("Sorry, too big an array, consider shrinking the spacing or the size!")
+        try:
+            if startRow < 0 or startCol < 0:
+                raise ValueError("Sorry, too big an array, consider shrinking the spacing or the size!")
+        except ValueError as ve:
+            print(ve)
         return int(startRow), int(endRow), int(startCol), int(endCol)
 
     def assembleLatticeFromUnitcell(self, spacing, p_vector, unitcell, num_cell_h, num_cell_v):
@@ -444,8 +445,6 @@ class WGS:
         # SLM_phase0 is the calculated phase through WGS from last iteration
         # targetAmp_adapt_lastiter is the target Amp from last iteration.
         SLM_Amp = self.initGaussianAmp
-        if np.size(SLM_Amp) != np.size(SLM_Phase0):
-            raise Exception("Input SLM phase matrix does not match its ampitude matrix!")
         SLM_Field = np.multiply(SLM_Amp, np.exp(1j*SLM_Phase0))
         count = 0
         g_coeff0 = 1
@@ -460,6 +459,7 @@ class WGS:
         targetAmp = targetAmp_adapt_lastiter/np.sqrt(np.sum(np.square(targetAmp_adapt_lastiter)))
         targetAmp_adapt = np.multiply(np.sqrt(np.divide(targetInt_avg, targetInt, out=np.zeros_like(targetInt_avg),
                                             where=targetInt != 0)), targetAmp)
+        print(np.sum(np.square(targetAmp_adapt_lastiter)))
         print(np.sum(np.square(targetAmp_adapt)))
         targetAmp_adapt_weightfactor = np.abs(targetAmp_adapt)/np.sum(np.abs(targetAmp_adapt))
 
@@ -527,7 +527,6 @@ class WGS:
         # This function is to crop the center pixel area to fit to the SLM screen
         # SLM_Phase is the phase image calculated by WGS
         # SLMResX, SLMResY retrieve the size of the SLM screen
-        # The final result will be converted into an 8 bit image
         # X is column
         col = np.size(SLM_Phase, axis=1)
         # Y is row

@@ -35,7 +35,7 @@ class Zernike:
         # change all nan values in Phi matrix to be zero
         where_are_NaNs = np.isnan(Phi)
         Phi[where_are_NaNs] = 0
-        Phi_norm = Phi
+        Phi_norm = Phi/2
         n = cart.ntab[self.ind_Zernike]
         m = cart.mtab[self.ind_Zernike]
         zernike_str = f"Radial: {n}, Angular: {m}"
@@ -67,13 +67,14 @@ class Zernike:
 SLMResX = 1272
 SLMResY = 1024
 pixelpitch = 12.5e-6
-aperture_radius = 6.5e-3
-ind_Zernike = 1
-percent = 0.01
+aperture_radius = 6e-3
+ind_Zernike = 2
+percent = 1
 myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
 SLM_screen = myOberrationCorr.phase_Zernike(Plot = True, Save = True)
-"""""
-"""""
+print(np.max(SLM_screen))
+print(np.min(SLM_screen))
+
 a = np.array([[9, 2, 3],
            [4, 5, 6],
            [7, 0, 5]])
