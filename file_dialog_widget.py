@@ -54,6 +54,19 @@ class LoadAndSave(QWidget):
             intenArray = np.genfromtxt(csvfile, delimiter=',')
         return intenArray
 
+    def LoadTargetAmpFileDialog(self):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load target Amp files:", "",
+                                                   "Target Amp file from last iteration (*.csv)")
+        if file_name:
+            print(file_name)
+        file_path = Path(file_name)
+        with open(file_path, newline='') as csvfile:
+            targetAmp_adapt_lastiter = np.genfromtxt(csvfile, delimiter=',')
+        return targetAmp_adapt_lastiter
+
     def LoadConfigFileDialog(self):
         self.initUI()
         options = QFileDialog.Options()
@@ -70,6 +83,7 @@ class LoadAndSave(QWidget):
         image = Image.open(file_name)
         corr_data = np.asarray(image)
         return corr_data
+
 
     def SaveFileDialog(self, SLM_screen_WGS):
         self.initUI()
@@ -92,7 +106,12 @@ class LoadAndSave(QWidget):
         file_name, _ = QFileDialog.getSaveFileName(self, "Save config file:", "", "SLM Config Files (*.npy)")
         np.save(file_name, SLMconfigFile)
 
-
+    def SaveTargetAmpFileDialog(self, targetAmp):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save target Amp file:", "", "SLM target Amp Files (*.csv)")
+        np.savetxt(file_name, targetAmp, delimiter=",")
 # check load config file
 #SLMconfig = np.load('SLM_rec_config.npy', allow_pickle=True).item()
 #print(SLMconfig['SLM resX'])

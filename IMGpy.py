@@ -110,7 +110,7 @@ class IMG:
         Trap = Tweezer([m, n],arraysize)
         startRow, endRow, startCol, endCol = Trap.assembleRecLattice([spacingx, spacingy])
         # get startRow to endRow-1
-        targetAmp[startRow:endRow:spacingy,:][:, startCol:endCol:spacingx]=intensityPerSite**0.5
+        targetAmp[startRow+1:endRow+1:spacingy,:][:, startCol+1:endCol+1:spacingx]=intensityPerSite**0.5
         startRow_display = int(startRow-spacingy)
         endRow_display = int(self.ImgResY/2)
         startCol_display = int(startCol-spacingx)
@@ -436,11 +436,11 @@ class WGS:
             plt.show()
         return SLM_Amp, SLM_Phase, fftAmp, new_non_uniform_norm
 
-    def fftLoop_adapt(self, SLM_Phase0, targetAmp_foci, Loop, threshold, Plot=True):
-        # Here targetAmp is the amplitude of the pre-set uniform array
-        # targetAmp_foci is the measured amplitude at the focal point
-        # SLM_phase is the calculated phase through WGS assuming uniform intensity distribution
+    def fftLoop_adapt(self, SLM_Phase0, targetAmp_foci, targetAmp_adapt_lastiter, Loop, threshold, Plot=True):
         # This function is used to compensate the measured intensity non-uniformity from Thorcam
+        # targetAmp_foci is the measured amplitude at the focal point
+        # SLM_phase0 is the calculated phase through WGS from last iteration
+        # targetAmp_adapt_lastiter is the target Amp from last iteration.
         SLM_Amp = self.initGaussianAmp
         if np.size(SLM_Amp) != np.size(SLM_Phase0):
             raise Exception("Input SLM phase matrix does not match its ampitude matrix!")
@@ -455,9 +455,12 @@ class WGS:
         targetInt_nonzero = np.abs(targetInt[targetInt != 0])
         print(targetInt_nonzero)
         targetInt_avg = np.multiply(np.sum(targetInt) / self.totalsites, self.targetAmpmask)
+        targetAmp = targetAmp_adapt_lastiter/np.sqrt(np.sum(np.square(targetAmp_adapt_lastiter)))
         targetAmp_adapt = np.multiply(np.sqrt(np.divide(targetInt_avg, targetInt, out=np.zeros_like(targetInt_avg),
-                                            where=targetInt != 0)), self.targetAmp)
+                                            where=targetInt != 0)), targetAmp)
+        print(np.sum(np.square(targetAmp_adapt)))
         targetAmp_adapt_weightfactor = np.abs(targetAmp_adapt)/np.sum(np.abs(targetAmp_adapt))
+
         non_uniform = np.zeros(Loop)
         while count < Loop:
             fftSLM = sp.fft.fft2(SLM_Field)
@@ -466,16 +469,14 @@ class WGS:
             fftSLMShift_norm = fftSLMShift / fftSLM_norm
             fftAmp = np.abs(fftSLMShift_norm)
             fftAmp_foci = np.multiply(fftAmp, self.targetAmpmask)
-            #non_uniform[count] = self.nonUniformity_adapt(fftAmp_foci, targetAmp_adapt)
             non_uniform[count], inten_foci_nonzero, inten_adapt_nonzero = self.nonUniformity_adapt(fftAmp_foci, targetAmp_adapt)
             fftAmp_foci_avg = np.multiply(np.sum(fftAmp_foci), self.targetAmpmask)
             g_coeff = np.multiply(np.divide(np.multiply(fftAmp_foci_avg, targetAmp_adapt_weightfactor), fftAmp_foci, out=np.zeros_like(fftAmp_foci_avg),
                                             where=fftAmp_foci != 0), g_coeff0)
 
             Focal_Amp = np.multiply(targetAmp_adapt, g_coeff)
-           # Focal_Amp = targetAmp_adapt
-            if non_uniform[count] > threshold:
-            #if count == 0:
+           # Initialize Focal phase and do phase fixed WGS
+            if non_uniform[count] > threshold or count == 0:
                 Focal_phase0 = np.angle(fftSLMShift_norm)
             else:
                 Focal_phase0 = Focal_phase

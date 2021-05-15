@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
     #           displayMode = 0, not connect to SLM, calculate Phase pattern through phase-fixed WGS
     def setupUi(self, MainWindow):
         # Please set displayMode here:
-        self.displayMode = 0
+        self.displayMode = 1
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(743, 531)
@@ -550,18 +550,8 @@ class Ui_MainWindow(object):
                                                                                                     arraysizey], Triangle=True,
                                                                                                    Plot=True)
             print("Focal pitch size: ", Focalpitchx)
-            # test intensity modulation on a 3 by 3 array
-            #intenArray = np.divide([0.1299, 0.1182, 0.1133, 0.0935, 0.1032, 0.1104, 0.1204, 0.0936, 0.1175],1)
-           # intenArray = np.divide([ 0.1048, 0.1083, 0.1156, 0.1077, 0.1042, 0.1161, 0.1136, 0.1300, 0.0998], 1)
-           # targetAmp_foci = myIMG.modify_targetAmp_sites(targetAmp, [spacingx, spacingy], intenArray, location)
-            #targetAmp_diffrac = targetAmp
             WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
             SLM_Amp, SLM_Phase, Focal_Amp, non_uniform = WGScal.fftLoop(Loop, threshold)
-          #  SLM_Amp_adapt, SLM_Phase_adapt, Focal_Amp_adapt, non_uniform_adapt, targetAmp_adapt = WGScal.fftLoop_adapt(SLM_Phase, targetAmp_foci, 15, threshold)
-           # myIMG.plotSLMplane(SLM_Amp_adapt)
-           # myIMG.plotSLMplane(SLM_Phase_adapt)
-           # myIMG.plotFocalplane(targetAmp_adapt, location)
-           # myIMG.plotFocalplane(Focal_Amp_adapt, location)
             myIMG.plotFocalplane(Focal_Amp, location)
             SLM_bit, fftSLM_IMG_Amp_norm, SLM_Screen_WGS = WGScal.SLM_IMG(SLM_Phase, resX, resY, Plot=True)
             # X is column
@@ -583,6 +573,7 @@ class Ui_MainWindow(object):
                 LS = LoadAndSave()
                 LS.SaveFileDialog(SLM_Screen_WGS)
                 LS.SavePhaseFileDialog(SLM_Phase)
+                LS.SaveTargetAmpFileDialog(targetAmp)
             if saveConfig:
                 ConfigFile = {}
                 ConfigFile["pixel pitch"] = pixelpitch
@@ -636,6 +627,8 @@ class Ui_MainWindow(object):
             print("Now we load SLM config for our previous iteration:")
             SLMconfig = LS.LoadConfigFileDialog()
             print(SLMconfig)
+            print("Now we load target Amp from last iteration:")
+            targetAmp_adapt_lastiter = LS.LoadTargetAmpFileDialog()
             pixelpitch = SLMconfig['pixel pitch']
             spacingx = SLMconfig['arr spacing x']
             spacingy = SLMconfig['arr spacing y']
@@ -688,7 +681,7 @@ class Ui_MainWindow(object):
                 raise Exception("SLM phase file loaded does not match WGS config, you could load the wrong file, go check it!")
             WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
             SLM_Amp_adapt, SLM_Phase_adapt, Focal_Amp_adapt, non_uniform_adapt, targetAmp_adapt = WGScal.fftLoop_adapt(
-               SLM_Phase, targetAmp_foci, Loop, threshold)
+               SLM_Phase, targetAmp_foci, targetAmp_adapt_lastiter, Loop, threshold)
             myIMG.plotSLMplane(SLM_Amp_adapt)
             myIMG.plotSLMplane(SLM_Phase_adapt)
             myIMG.plotFocalplane(targetAmp_adapt, location)
@@ -713,6 +706,7 @@ class Ui_MainWindow(object):
                LS = LoadAndSave()
                LS.SaveFileDialog(SLM_Screen_WGS)
                LS.SavePhaseFileDialog(SLM_Phase)
+               LS.SaveTargetAmpFileDialog(targetAmp_adapt)
             if saveConfig:
                ConfigFile = {}
                ConfigFile["pixel pitch"] = pixelpitch
