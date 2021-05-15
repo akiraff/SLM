@@ -110,7 +110,7 @@ class IMG:
         Trap = Tweezer([m, n],arraysize)
         startRow, endRow, startCol, endCol = Trap.assembleRecLattice([spacingx, spacingy])
         # get startRow to endRow-1
-        targetAmp[startRow+1:endRow+1:spacingy,:][:, startCol+1:endCol+1:spacingx]=intensityPerSite**0.5
+        targetAmp[startRow+spacingy:endRow+spacingy:spacingy,:][:, startCol+spacingx:endCol+spacingx:spacingx]=intensityPerSite**0.5
         startRow_display = int(startRow-spacingy)
         endRow_display = int(self.ImgResY/2)
         startCol_display = int(startCol-spacingx)
@@ -118,6 +118,8 @@ class IMG:
         location = [startRow_display, endRow_display, startCol_display, endCol_display]
         if Plot:
             self.plotFocalplane(targetAmp, location)
+        # check the distance between nearest point to origin
+       # print(targetAmp[endRow][endCol])
         return self.Focalpitchx, self.Focalpitchy, targetAmp, location
 
     def initFocalImage_KagomeLattice(self, distance, spacing, arraysize, Triangle = False, Plot = True):
@@ -183,7 +185,7 @@ class IMG:
         location = [startRow_display, endRow_display, startCol_display, endCol_display]
         if Plot:
             self.plotFocalplane(targetAmp, location)
-        return self.Focalpitchx,self.Focalpitchy, targetAmp, location
+        return self.Focalpitchx, self.Focalpitchy, targetAmp, location
 
     def diffraction_efficiency(self, location):
         # This function calculates the diffraction efficiency at different location according to the distance from origin
