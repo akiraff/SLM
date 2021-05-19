@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
     #           displayMode = 0, not connect to SLM, calculate Phase pattern through phase-fixed WGS
     def setupUi(self, MainWindow):
         # Please set displayMode here:
-        self.displayMode = 0
+        self.displayMode = 1
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(743, 531)
@@ -124,16 +124,6 @@ class Ui_MainWindow(object):
         font.setWeight(75)
         self.Button_calculate.setFont(font)
         self.Button_calculate.setObjectName("Button_calculate")
-        """""
-        self.Button_init = QtWidgets.QPushButton(self.centralwidget)
-        self.Button_init.setGeometry(QtCore.QRect(450, 370, 153, 28))
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setBold(True)
-        font.setWeight(75)
-        self.Button_init.setFont(font)
-        self.Button_init.setObjectName("Button_init")
-        """""
 
         self.Button_calculateAdapt = QtWidgets.QPushButton(self.centralwidget)
         self.Button_calculateAdapt.setGeometry(QtCore.QRect(480, 340, 150, 28))
@@ -379,7 +369,7 @@ class Ui_MainWindow(object):
         else:
             self.Button_calculate.clicked.connect(self.calculate)
             self.Button_calculateAdapt.clicked.connect(self.calculateAdapt)
-        self.Button_load.clicked.connect(self.load)
+            self.Button_load.clicked.connect(self.load)
         self.Loop.editingFinished.connect(self.validating_integerLoop)
         self.arraySizex.editingFinished.connect(self.validating_integerSizex)
         self.arraySizey.editingFinished.connect(self.validating_integerSizey)
@@ -755,7 +745,11 @@ class Ui_MainWindow(object):
     def send(self):
         LS = LoadAndSave()
         SLM_phase_data = LS.LoadFileDialog()
-        SLM_bit = np.around((SLM_phase_data + np.pi) / (2 * np.pi) * 255)
+        # SLM_phase_data is between -pi and pi
+        SLM_phase_data_mod = np.mod(SLM_phase_data + 2*np.pi, 2*np.pi)
+        SLM_bit = np.around(SLM_phase_data_mod / (2 * np.pi) * 255)
+        print(np.min(SLM_bit))
+        print(np.max(SLM_bit))
         SLM_corrPattern = LS.LoadCorrFileDialog()
         SLM_corrected = SLM_bit + SLM_corrPattern
         SLM_wrappedPattern = np.mod(SLM_corrected, 256)
@@ -776,23 +770,42 @@ class Ui_MainWindow(object):
             print("Please input zernike index input!")
         elif self.zindpercent.text() == "":
             print("Please input the percent !")
-        ind_Zernike = int(self.zind.text())
-        percent = float(self.zindpercent.text())
-        LS = LoadAndSave()
-        print("We first load SLM config:")
-        SLMconfig = LS.LoadConfigFileDialog()
-        print(SLMconfig)
-        SLMResX = SLMconfig['SLM resX']
-        SLMResY = SLMconfig['SLM resY']
-        pixelpitch = SLMconfig['pixel pitch']
-        aperture_radius = SLMconfig['aperture size']
-        print("Next, we load the phase file:")
-        SLM_screen_WGS = LS.LoadFileDialog()
-        myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
-        SLM_aberr_screen = myOberrationCorr.phase_Zernike(Plot=True, Save=False)
-        SLM_screen_WGS_aberr = SLM_screen_WGS + SLM_aberr_screen
-        print("Finally, we add the oberration and save the phase file.")
-        LS.SaveFileDialog(SLM_screen_WGS_aberr)
+        else:
+            ind_Zernike = int(self.zind.text())
+            percent = float(self.zindpercent.text())
+            print(ind_Zernike)
+            print(percent)
+            LS = LoadAndSave()
+            print("We first load SLM config:")
+            SLMconfig = LS.LoadConfigFileDialog()
+            print(SLMconfig)
+            SLMResX = SLMconfig['SLM resX']
+            SLMResY = SLMconfig['SLM resY']
+            pixelpitch = SLMconfig['pixel pitch']
+            aperture_radius = SLMconfig['aperture radius']
+            print("Next, we load the SLM screen phase file:")
+            SLM_screen_WGS = LS.LoadFileDialog()
+            try:
+                sz = np.size(SLM_screen_WGS)
+                if sz != SLMResX* SLMResY:
+                    raise ValueError("Input SLM phase matrix does not match its SLMConfig, you might "
+                                     "mistakenly load SLM phase file.")
+            except ValueError as ve:
+                print(ve)
+            myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
+            SLM_aberr_screen = myOberrationCorr.phase_Zernike(Plot=True, Save=False)
+            print(np.max(SLM_aberr_screen))
+            print(np.min(SLM_aberr_screen))
+            # convert total phase between -pi and pi
+            SLM_screen_WGS_aberr_add = SLM_screen_WGS + SLM_aberr_screen + 4*np.pi
+            SLM_screen_WGS_aberr = np.mod(SLM_screen_WGS_aberr_add, 2*np.pi)-np.pi
+            print(np.max(SLM_screen_WGS))
+            print(np.min(SLM_screen_WGS))
+           # print(np.max(SLM_screen_WGS_aberr_add))
+            print(np.max(SLM_screen_WGS_aberr))
+            print(np.min(SLM_screen_WGS_aberr))
+            print("Finally, we add the oberration and save the phase file.")
+            LS.SaveFileDialog(SLM_screen_WGS_aberr)
 
     def validating_integerLoop(self):
         validating_rule = QDoubleValidator(0, 100, 0)
@@ -907,7 +920,7 @@ class Ui_MainWindow(object):
             self.zind.setText("")
 
     def validating_floatzindpercent(self):
-        validating_rule = QDoubleValidator(0, 1, 5)
+        validating_rule = QDoubleValidator(-1, 1, 5)
         #   print(validating_rule.validate(self.Loop.text(), 14))
         if validating_rule.validate(self.zindpercent.text(), 14)[0] == QValidator.Acceptable:
             self.zindpercent.setFocus()
