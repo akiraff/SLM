@@ -523,7 +523,7 @@ class WGS:
         non_Uniform = np.sqrt((np.sum(np.square(Inten_foci_nonzero - Inten_adapt_nonzero)))) / self.totalsites / np.mean(Inten_adapt_nonzero)
         return non_Uniform, Inten_foci_nonzero, Inten_adapt_nonzero
 
-    def SLM_IMG(self, SLM_Phase, SLMResX, SLMResY, Plot=True):
+    def SLM_IMG(self, SLM_Phase, SLMResX, SLMResY, Plot = True):
         # This function is to crop the center pixel area to fit to the SLM screen
         # SLM_Phase is the phase image calculated by WGS
         # SLMResX, SLMResY retrieve the size of the SLM screen

@@ -746,8 +746,9 @@ class Ui_MainWindow(object):
         LS = LoadAndSave()
         SLM_phase_data = LS.LoadFileDialog()
         # SLM_phase_data is between -pi and pi
-        SLM_phase_data_mod = np.mod(SLM_phase_data + 2*np.pi, 2*np.pi)
-        SLM_bit = np.around(SLM_phase_data_mod / (2 * np.pi) * 255)
+       # SLM_phase_data_mod = np.mod(SLM_phase_data + 2*np.pi, 2*np.pi)
+       # SLM_bit = np.around(SLM_phase_data_mod / (2 * np.pi) * 255)
+        SLM_bit =np.around((SLM_phase_data + np.pi) / (2 * np.pi) * 255)
         print(np.min(SLM_bit))
         print(np.max(SLM_bit))
         SLM_corrPattern = LS.LoadCorrFileDialog()
@@ -756,8 +757,8 @@ class Ui_MainWindow(object):
         # 1038 nm
         value_for2pi = 212
         SLM_displayPattern = np.around(SLM_wrappedPattern*value_for2pi/255).astype('uint8')
-        #print(np.max(SLM_displayPattern))
-        #print(np.min(SLM_displayPattern))
+        print(np.max(SLM_displayPattern))
+        print(np.min(SLM_displayPattern))
         self.slm.updateArray(SLM_displayPattern)
 
     def stop(self):
@@ -798,7 +799,11 @@ class Ui_MainWindow(object):
             print(np.min(SLM_aberr_screen))
             # convert total phase between -pi and pi
             SLM_screen_WGS_aberr_add = SLM_screen_WGS + SLM_aberr_screen + 4*np.pi
-            SLM_screen_WGS_aberr = np.mod(SLM_screen_WGS_aberr_add, 2*np.pi)-np.pi
+            SLM_screen_WGS_aberr_mod = np.mod(SLM_screen_WGS_aberr_add, 2*np.pi)
+            SLM_screen_WGS_aberr = np.multiply((SLM_screen_WGS_aberr_mod <= np.pi), SLM_screen_WGS_aberr_mod)  \
+                                  + np.multiply((SLM_screen_WGS_aberr_mod > np.pi), SLM_screen_WGS_aberr_mod - 2*np.pi)
+            print(np.max(SLM_screen_WGS_aberr_mod))
+            print(np.min(SLM_screen_WGS_aberr_mod))
             print(np.max(SLM_screen_WGS))
             print(np.min(SLM_screen_WGS))
            # print(np.max(SLM_screen_WGS_aberr_add))
