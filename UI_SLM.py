@@ -321,6 +321,14 @@ class Ui_MainWindow(object):
         self.saveConfig.setFont(font)
         self.saveConfig.setObjectName("saveConfig")
 
+        self.phaseContinue = QtWidgets.QCheckBox(self.centralwidget)
+        self.phaseContinue.setGeometry(QtCore.QRect(250, 465, 161, 41))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.phaseContinue.setFont(font)
+        self.phaseContinue.setObjectName("phaseContinue")
+
         self.label_17 = QtWidgets.QLabel(self.centralwidget)
         self.label_17.setGeometry(QtCore.QRect(90, 170, 231, 21))
         font = QtGui.QFont()
@@ -428,6 +436,7 @@ class Ui_MainWindow(object):
         self.mask.setText(_translate("MainWindow", "Use Aperture?"))
         self.save.setText(_translate("MainWindow", "Save?"))
         self.saveConfig.setText(_translate("MainWindow", "Save config?"))
+        self.phaseContinue.setText(_translate("MainWindow", "Continue?"))
         self.label_17.setText(_translate("MainWindow", "Distance from origin (micron)"))
         self.label_18.setText(_translate("MainWindow", "x"))
         self.label_19.setText(_translate("MainWindow", "y"))
@@ -770,7 +779,7 @@ class Ui_MainWindow(object):
         if self.zind.text() == "":
             print("Please input zernike index input!")
         elif self.zindpercent.text() == "":
-            print("Please input the percent !")
+            print("Please input the percent!")
         else:
             ind_Zernike = int(self.zind.text())
             percent = float(self.zindpercent.text())
@@ -794,11 +803,19 @@ class Ui_MainWindow(object):
             except ValueError as ve:
                 print(ve)
             myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike, percent)
-            SLM_aberr_screen = myOberrationCorr.phase_Zernike(Plot=True, Save=False)
+            SLM_aberr_screen, m, n = myOberrationCorr.phase_Zernike(Plot=True, Save=False)
+            if self.phaseContinue.isChecked():
+                SLM_aberr_screen = myOberrationCorr.phase_Zernike_continuous(m, n)
             print(np.max(SLM_aberr_screen))
             print(np.min(SLM_aberr_screen))
             # convert total phase between -pi and pi
-            SLM_screen_WGS_aberr_add = SLM_screen_WGS + SLM_aberr_screen + 4*np.pi
+            SLM_screen_WGS_aberr_add = SLM_screen_WGS + SLM_aberr_screen
+            min_add = np.min(SLM_screen_WGS_aberr_add)
+            #print(min_add)
+            if  min_add < 0:
+                ind_2pi = np.abs(np.floor(np.divide(min_add, 2*np.pi)))
+                print(ind_2pi)
+                SLM_screen_WGS_aberr_add =  SLM_screen_WGS_aberr_add + ind_2pi *2*np.pi
             SLM_screen_WGS_aberr_mod = np.mod(SLM_screen_WGS_aberr_add, 2*np.pi)
             SLM_screen_WGS_aberr = np.multiply((SLM_screen_WGS_aberr_mod <= np.pi), SLM_screen_WGS_aberr_mod)  \
                                   + np.multiply((SLM_screen_WGS_aberr_mod > np.pi), SLM_screen_WGS_aberr_mod - 2*np.pi)
