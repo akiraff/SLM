@@ -24,10 +24,10 @@ class Ui_MainWindow(object):
     #           displayMode = 0, not connect to SLM, calculate Phase pattern through phase-fixed WGS
     def setupUi(self, MainWindow):
         # Please set displayMode here:
-        self.displayMode = 1
+        self.displayMode = 0
 
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(743, 531)
+        MainWindow.resize(750, 531)
         if self.displayMode:
            self.slm = slmpy.SLMdisplay(isImageLock=True)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -160,7 +160,7 @@ class Ui_MainWindow(object):
         self.label_9.setFont(font)
         self.label_9.setObjectName("label_9")
         self.label_10 = QtWidgets.QLabel(self.centralwidget)
-        self.label_10.setGeometry(QtCore.QRect(0, 200, 91, 41))
+        self.label_10.setGeometry(QtCore.QRect(0, 140, 91, 41))
         font = QtGui.QFont()
         font.setFamily("Arial")
         font.setPointSize(12)
@@ -204,18 +204,38 @@ class Ui_MainWindow(object):
         self.arraySizey.setObjectName("arraySizey")
 
         self.label_21 = QtWidgets.QLabel(self.centralwidget)
-        self.label_21.setGeometry(QtCore.QRect(15, 260, 100, 21))
+        self.label_21.setGeometry(QtCore.QRect(13, 235, 100, 21))
         font = QtGui.QFont()
         font.setFamily("Arial")
         font.setPointSize(10)
         self.label_21.setFont(font)
         self.label_21.setObjectName("label_21")
         self.arrayGeometry = QtWidgets.QComboBox(self.centralwidget)
-        self.arrayGeometry.setGeometry(QtCore.QRect(10, 280, 81, 22))
+        self.arrayGeometry.setGeometry(QtCore.QRect(10, 260, 81, 22))
         self.arrayGeometry.setObjectName("arrayGeometry")
         self.arrayGeometry.addItem("")
         self.arrayGeometry.addItem("")
         self.arrayGeometry.addItem("")
+
+        self.label_26 = QtWidgets.QLabel(self.centralwidget)
+        self.label_26.setGeometry(QtCore.QRect(5, 285, 150, 21))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.label_26.setFont(font)
+        self.label_26.setObjectName("label_26")
+        self.rotAngle = QtWidgets.QLineEdit(self.centralwidget)
+        self.rotAngle.setGeometry(QtCore.QRect(10, 310, 80, 21))
+        self.rotAngle.setObjectName("rotAngle")
+
+
+        self.rot = QtWidgets.QCheckBox(self.centralwidget)
+        self.rot.setGeometry(QtCore.QRect(15, 330, 161, 41))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.rot.setFont(font)
+        self.rot.setObjectName("rot")
 
         self.label_22 = QtWidgets.QLabel(self.centralwidget)
         self.label_22.setGeometry(QtCore.QRect(0, 420, 121, 41))
@@ -393,6 +413,7 @@ class Ui_MainWindow(object):
         self.maskradius.editingFinished.connect(self.validating_floatmaskradius)
         self.zind.editingFinished.connect(self.validating_integerzind)
         self.zindpercent.editingFinished.connect(self.validating_floatzindpercent)
+        self.rotAngle.editingFinished.connect(self.validating_floatrotAngle)
 
 
 
@@ -449,6 +470,8 @@ class Ui_MainWindow(object):
         self.label_23.setText(_translate("MainWindow", "Zernike index"))
         self.label_24.setText(_translate("MainWindow", "Percent"))
         self.label_25.setText(_translate("MainWindow", "Display"))
+        self.label_26.setText(_translate("MainWindow", "rot angle (deg)"))
+        self.rot.setText(_translate("MainWindow", "Rotate?"))
 
     def calculate(self):
         if self.pixelpitch.text() == "":
@@ -477,6 +500,9 @@ class Ui_MainWindow(object):
             print("Please specify the beam waist of the gaussian beam!")
         elif self.maskradius.text() == "":
             print("Please specify the aperture of the imaging system!")
+        elif self.rotAngle.text() == "":
+            if self.rot.isChecked():
+                print("Please specify the rotation angle in degree!")
         else:
             pixelpitch = float(self.pixelpitch.text())*1e-6
             print("pixel pitch: ", pixelpitch)
@@ -508,6 +534,12 @@ class Ui_MainWindow(object):
             print("Input beam waist: ", beamwaist)
             maskradius = float(self.maskradius.text())*1e-3
             print("Aperture size: ", maskradius)
+            if self.rot.isChecked():
+                rot = 1
+                rotAngle = float(self.rotAngle.text())
+            else:
+                rot = 0
+            print("Rotate?", rot)
             if self.mask.isChecked():
                 mask = 1
             else:
@@ -523,12 +555,9 @@ class Ui_MainWindow(object):
             else:
                 saveConfig = 0
             print("Save Config?", saveConfig)
-            #slm = slmpy.SLMdisplay(isImageLock=False)
-           # slm = slmpy.SLMdisplay()
             # Directly specify the resolution corresponding to the Hamamastu SLM dimension
             resX, resY = 1272, 1024
             res = np.min([resX, resY])
-           # slm.close()
             print("resX =: ", resX)
             print("resY=: ", resY)
             myIMG = IMGpy.IMG(pixelpitch, [arraysizeBit, arraysizeBit], beamwaist, focallength, magnification,
@@ -549,6 +578,10 @@ class Ui_MainWindow(object):
                                                                                                     arraysizey], Triangle=True,
                                                                                                    Plot=True)
             print("Focal pitch size: ", Focalpitchx)
+            if rot:
+                targetAmp_rot, location_rot = myIMG.rotate_targetAmp(targetAmp, rotAngle, location, Plot = True)
+                location = location_rot
+                targetAmp = targetAmp_rot
             WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
             SLM_Amp, SLM_Phase, Focal_Amp, non_uniform = WGScal.fftLoop(Loop, threshold)
             myIMG.plotFocalplane(Focal_Amp, location)
@@ -559,9 +592,9 @@ class Ui_MainWindow(object):
             # Y is row
             rowIMG = np.size(SLM_bit, axis=0)
             rowFFT = np.size(SLM_Phase, axis=0)
-            endRowIMG = rowIMG/2
+            endRowIMG = np.max([rowIMG/2, (location[1]-rowFFT/2)*rowIMG/rowFFT + rowIMG/2])
             startRowIMG = round(endRowIMG-(location[1]-location[0])*rowIMG/rowFFT)
-            endColIMG = colIMG/2
+            endColIMG = np.max([colIMG/2, (location[3]-colFFT/2)*colIMG/colFFT + colIMG/2])
             startColIMG = round(endColIMG-(location[3]-location[2])*colIMG/colFFT)
             locationIMG = [int(startRowIMG), int(endRowIMG), int(startColIMG), int(endColIMG)]
             myIMG.plotFocalplane(fftSLM_IMG_Amp_norm, locationIMG)
@@ -593,6 +626,9 @@ class Ui_MainWindow(object):
                 ConfigFile["use aperture?"] = mask
                 ConfigFile["SLM resX"] = resX
                 ConfigFile["SLM resY"] = resY
+                ConfigFile["rot"] = rot
+                if rot:
+                    ConfigFile["rotAngle"] = rotAngle
                 LS = LoadAndSave()
                 LS.SaveConfigFileDialog(ConfigFile)
 
@@ -763,8 +799,8 @@ class Ui_MainWindow(object):
         SLM_corrPattern = LS.LoadCorrFileDialog()
         SLM_corrected = SLM_bit + SLM_corrPattern
         SLM_wrappedPattern = np.mod(SLM_corrected, 256)
-        # 1038 nm
-        value_for2pi = 212
+        # 1064 nm
+        value_for2pi = 217
         SLM_displayPattern = np.around(SLM_wrappedPattern*value_for2pi/255).astype('uint8')
         print(np.max(SLM_displayPattern))
         print(np.min(SLM_displayPattern))
@@ -862,7 +898,7 @@ class Ui_MainWindow(object):
             self.pixelpitch.setText("")
 
     def validating_floatspacingx(self):
-        validating_rule = QDoubleValidator(0, 100, 4)
+        validating_rule = QDoubleValidator(0, 500, 4)
        # print(validating_rule.validate(self.spacingx.text(), 14))
         if validating_rule.validate(self.spacingx.text(), 14)[0] == QValidator.Acceptable:
             self.spacingx.setFocus()
@@ -870,7 +906,7 @@ class Ui_MainWindow(object):
             self.spacingx.setText("")
 
     def validating_floatspacingy(self):
-        validating_rule = QDoubleValidator(0, 100, 4)
+        validating_rule = QDoubleValidator(0, 500, 4)
       #  print(validating_rule.validate(self.spacingy.text(), 14))
         if validating_rule.validate(self.spacingy.text(), 14)[0] == QValidator.Acceptable:
             self.spacingy.setFocus()
@@ -948,6 +984,14 @@ class Ui_MainWindow(object):
             self.zindpercent.setFocus()
         else:
             self.zindpercent.setText("")
+
+    def validating_floatrotAngle(self):
+        validating_rule = QDoubleValidator(-180, 180, 5)
+        #   print(validating_rule.validate(self.Loop.text(), 14))
+        if validating_rule.validate(self.rotAngle.text(), 14)[0] == QValidator.Acceptable:
+            self.rotAngle.setFocus()
+        else:
+            self.rotAngle.setText("")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

@@ -92,8 +92,6 @@ class IMG:
         # This distance is the real physical distance between the nearest point and the origin
         # This spacing is the real physical distance between the lattice spot
         # arraysize =[arraysizex, arraysizey], defines the target array we want on the SLM plane
-        # for now, I am using homogeneous trap intensity for all traps. In the end, I need to set them at different
-        # intensity to compensate for the possible non-uniform diffraction efficiency
         targetAmp = np.zeros((int(self.ImgResY), int(self.ImgResX)))
         dm = round(distance/np.sqrt(2)/self.Focalpitchx)
         dn = round(distance/np.sqrt(2)/self.Focalpitchy)
@@ -281,6 +279,54 @@ class IMG:
             self.plotFocalplane(targetAmp_foci, location)
         return targetAmp_foci
 
+    def rotate_targetAmp(self, targetAmp, angle, location, Plot = True):
+        # This function rotates the target Amp pattern around the origin. The goal is to match SLM traps with AOD
+        # sorting traps. targetAmp is the input target foci pattern， angle is an input value in degree.
+        # X is column
+        col = np.size(targetAmp, axis=1)
+        # Y is row
+        row = np.size(targetAmp, axis=0)
+        # Find trap location
+        targetAmpmask = (targetAmp > 0) * 1
+        Traploc = np.argwhere(targetAmpmask == 1)
+        # print(Traploc)
+        Traprow = Traploc[:, 0]
+        Trapcol = Traploc[:, 1]
+        centerX = col / 2
+        centerY = row / 2
+        # Rotate the trap location around the origin
+        angle_rot = angle * np.pi/180
+        Trapcol_rot = np.round((Trapcol-centerX) * np.cos(angle_rot) -(Traprow-centerY) * np.sin(angle_rot) + centerX)
+        Traprow_rot = np.round((Trapcol-centerX) * np.sin(angle_rot) + (Traprow-centerY) * np.cos(angle_rot) + centerY)
+        # Populate the targetAmp after coordinate rotation
+        targetAmp_foci_rot = np.zeros_like(targetAmp)
+        for index in range(np.size(Trapcol_rot)):
+            # trap location after rotation
+            row_rot = Traprow_rot[index]
+            col_rot = Trapcol_rot[index]
+            # initial trap location
+            row = Traprow[index]
+            col = Trapcol[index]
+            targetAmp_foci_rot[int(row_rot), int(col_rot)] = targetAmp[int(row), int(col)]
+
+        if Plot:
+            # Find new location after rotation
+            startRow = location[0]
+            endRow = location[1]
+            startCol = location[2]
+            endCol = location[3]
+            #print(location)
+            startRow_rot = np.round((startRow-centerX) * np.sin(angle_rot) + (startRow-centerY) * np.cos(angle_rot)
+                                    + centerY)
+            endRow_rot = np.max(Traprow_rot)
+            startCol_rot = np.round((startCol-centerX) * np.cos(angle_rot) -(startCol-centerY) * np.sin(angle_rot)
+                                    + centerX)
+            endCol_rot = np.max(Trapcol_rot)
+            #print([startRow_rot, endRow_rot, startCol_rot, endCol_rot])
+            location_rot = [int(np.min([startRow, startRow_rot])), int(np.max([endRow, endRow_rot])),
+                            int(np.min([startCol, startCol_rot])), int(np.max([endCol, endCol_rot]))]
+            self.plotFocalplane(targetAmp_foci_rot, location_rot)
+        return targetAmp_foci_rot, location_rot
 
 class Tweezer:
     def __init__(self,location,arraysize):
@@ -440,10 +486,11 @@ class WGS:
         return SLM_Amp, SLM_Phase, fftAmp, new_non_uniform_norm
 
     def fftLoop_adapt(self, SLM_Phase0, targetAmp_foci, targetAmp_adapt_lastiter, Loop, threshold, Plot=True):
-        # This function is used to compensate the measured intensity non-uniformity from Thorcam
+        # This function is used to compensate the measured intensity non-uniformity from
         # targetAmp_foci is the measured amplitude at the focal point
         # SLM_phase0 is the calculated phase through WGS from last iteration
         # targetAmp_adapt_lastiter is the target Amp from last iteration.
+        # To do: with possible rotation, I need to rotate targetAmp_foci to take that into account.
         SLM_Amp = self.initGaussianAmp
         SLM_Field = np.multiply(SLM_Amp, np.exp(1j*SLM_Phase0))
         count = 0
