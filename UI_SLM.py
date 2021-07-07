@@ -499,7 +499,7 @@ class Ui_MainWindow(object):
         elif self.beamwaist.text() == "":
             print("Please specify the beam waist of the gaussian beam!")
         elif self.maskradius.text() == "":
-            print("Please specify the aperture of the imaging system!")
+            print("Please specify the aperture radius of the imaging system!")
         elif self.rotAngle.text() == "":
             if self.rot.isChecked():
                 print("Please specify the rotation angle in degree!")
@@ -533,7 +533,7 @@ class Ui_MainWindow(object):
             beamwaist = float(self.beamwaist.text())*1e-3
             print("Input beam waist: ", beamwaist)
             maskradius = float(self.maskradius.text())*1e-3
-            print("Aperture size: ", maskradius)
+            print("Aperture radius: ", maskradius)
             if self.rot.isChecked():
                 rot = 1
                 rotAngle = float(self.rotAngle.text())
@@ -631,7 +631,7 @@ class Ui_MainWindow(object):
                     ConfigFile["rotAngle"] = rotAngle
                 LS = LoadAndSave()
                 LS.SaveConfigFileDialog(ConfigFile)
-
+            print("All finished!")
 
     def calculateAdapt(self):
         # check the user whether he/she wants to save
@@ -684,6 +684,9 @@ class Ui_MainWindow(object):
             res = np.min([resX, resY])
             print("resX =: ", resX)
             print("resY=: ", resY)
+            rot = SLMconfig['rot']
+            if rot:
+                rotAngle = SLMconfig['rotAngle']
             myIMG = IMGpy.IMG(pixelpitch, [arraysizeBit, arraysizeBit], beamwaist, focallength, magnification,
                           wavelength, maskradius, res)
             gaussianAmp, gaussianPhase = myIMG.initSLMImage(mask=mask, Plot=False)
@@ -706,7 +709,6 @@ class Ui_MainWindow(object):
                                                                                                Plot=True)
             print("Focal pitch size: ", Focalpitchx)
 
-
             # raise exception if the user loads the wrong file
             try:
                 sz = np.size(targetAmp_adapt_lastiter)
@@ -726,6 +728,10 @@ class Ui_MainWindow(object):
                 print(ve)
             print(intenArray)
             targetAmp_foci = myIMG.modify_targetAmp_sites(targetAmp, [spacingx, spacingy], intenArray, location)
+            if rot:
+                targetAmp_foci_rot, location_foci_rot = myIMG.rotate_targetAmp(targetAmp_foci, rotAngle, location, Plot = True)
+                location = location_foci_rot
+                targetAmp_foci = targetAmp_foci_rot
             print("Now we load phase pattern from the previous iteration:")
             SLM_Phase = LS.LoadPhaseFileDialog()
             # raise exception if the user loads the wrong file
@@ -736,11 +742,11 @@ class Ui_MainWindow(object):
                                      "mistakenly load SLM screen file.")
             except ValueError as ve:
                 print(ve)
-            WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
+            WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp_foci)
             SLM_Amp_adapt, SLM_Phase_adapt, Focal_Amp_adapt, non_uniform_adapt, targetAmp_adapt = WGScal.fftLoop_adapt(
                SLM_Phase, targetAmp_foci, targetAmp_adapt_lastiter, Loop, threshold)
-            myIMG.plotSLMplane(SLM_Amp_adapt)
-            myIMG.plotSLMplane(SLM_Phase_adapt)
+            #myIMG.plotSLMplane(SLM_Amp_adapt)
+            #myIMG.plotSLMplane(SLM_Phase_adapt)
             myIMG.plotFocalplane(targetAmp_adapt, location)
             myIMG.plotFocalplane(Focal_Amp_adapt, location)
             SLM_bit, fftSLM_IMG_Amp_norm, SLM_Screen_WGS = WGScal.SLM_IMG(SLM_Phase_adapt, resX, resY, Plot=True)
@@ -750,9 +756,9 @@ class Ui_MainWindow(object):
             # Y is row
             rowIMG = np.size(SLM_bit, axis=0)
             rowFFT = np.size(SLM_Phase, axis=0)
-            endRowIMG = rowIMG / 2
+            endRowIMG = np.max([rowIMG/2, (location[1]-rowFFT/2)*rowIMG/rowFFT + rowIMG/2])
             startRowIMG = round(endRowIMG - (location[1] - location[0]) * rowIMG / rowFFT)
-            endColIMG = colIMG / 2
+            endColIMG = np.max([colIMG/2, (location[3]-colFFT/2)*colIMG/colFFT + colIMG/2])
             startColIMG = round(endColIMG - (location[3] - location[2]) * colIMG / colFFT)
             locationIMG = [int(startRowIMG), int(endRowIMG), int(startColIMG), int(endColIMG)]
             myIMG.plotFocalplane(fftSLM_IMG_Amp_norm, locationIMG)
@@ -784,6 +790,9 @@ class Ui_MainWindow(object):
                ConfigFile["use aperture?"] = mask
                ConfigFile["SLM resX"] = resX
                ConfigFile["SLM resY"] = resY
+               ConfigFile["rot"] = rot
+               if rot:
+                   ConfigFile["rotAngle"] = rotAngle
                LS = LoadAndSave()
                LS.SaveConfigFileDialog(ConfigFile)
 
@@ -864,6 +873,7 @@ class Ui_MainWindow(object):
             print(np.min(SLM_screen_WGS_aberr))
             print("Finally, we add the oberration and save the phase file.")
             LS.SaveFileDialog(SLM_screen_WGS_aberr)
+            print("All finished!")
 
     def validating_integerLoop(self):
         validating_rule = QDoubleValidator(0, 100, 0)

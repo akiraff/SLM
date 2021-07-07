@@ -308,24 +308,24 @@ class IMG:
             row = Traprow[index]
             col = Trapcol[index]
             targetAmp_foci_rot[int(row_rot), int(col_rot)] = targetAmp[int(row), int(col)]
+        # Find new location after rotation
+        startRow = location[0]
+        endRow = location[1]
+        startCol = location[2]
+        endCol = location[3]
+        # print(location)
+        startRow_rot = np.round((startRow - centerX) * np.sin(angle_rot) + (startRow - centerY) * np.cos(angle_rot)
+                                + centerY)
+        endRow_rot = np.max(Traprow_rot)
+        startCol_rot = np.round((startCol - centerX) * np.cos(angle_rot) - (startCol - centerY) * np.sin(angle_rot)
+                                + centerX)
+        endCol_rot = np.max(Trapcol_rot)
+        # print([startRow_rot, endRow_rot, startCol_rot, endCol_rot])
+        location_rot = [int(np.min([startRow, startRow_rot])), int(np.max([endRow, endRow_rot])),
+                        int(np.min([startCol, startCol_rot])), int(np.max([endCol, endCol_rot]))]
 
         if Plot:
-            # Find new location after rotation
-            startRow = location[0]
-            endRow = location[1]
-            startCol = location[2]
-            endCol = location[3]
-            #print(location)
-            startRow_rot = np.round((startRow-centerX) * np.sin(angle_rot) + (startRow-centerY) * np.cos(angle_rot)
-                                    + centerY)
-            endRow_rot = np.max(Traprow_rot)
-            startCol_rot = np.round((startCol-centerX) * np.cos(angle_rot) -(startCol-centerY) * np.sin(angle_rot)
-                                    + centerX)
-            endCol_rot = np.max(Trapcol_rot)
-            #print([startRow_rot, endRow_rot, startCol_rot, endCol_rot])
-            location_rot = [int(np.min([startRow, startRow_rot])), int(np.max([endRow, endRow_rot])),
-                            int(np.min([startCol, startCol_rot])), int(np.max([endCol, endCol_rot]))]
-            self.plotFocalplane(targetAmp_foci_rot, location_rot)
+           self.plotFocalplane(targetAmp_foci_rot, location_rot)
         return targetAmp_foci_rot, location_rot
 
 class Tweezer:
@@ -486,11 +486,10 @@ class WGS:
         return SLM_Amp, SLM_Phase, fftAmp, new_non_uniform_norm
 
     def fftLoop_adapt(self, SLM_Phase0, targetAmp_foci, targetAmp_adapt_lastiter, Loop, threshold, Plot=True):
-        # This function is used to compensate the measured intensity non-uniformity from
+        # This function is used to compensate the measured intensity non-uniformity from a camera
         # targetAmp_foci is the measured amplitude at the focal point
         # SLM_phase0 is the calculated phase through WGS from last iteration
         # targetAmp_adapt_lastiter is the target Amp from last iteration.
-        # To do: with possible rotation, I need to rotate targetAmp_foci to take that into account.
         SLM_Amp = self.initGaussianAmp
         SLM_Field = np.multiply(SLM_Amp, np.exp(1j*SLM_Phase0))
         count = 0
