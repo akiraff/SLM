@@ -795,6 +795,7 @@ class Ui_MainWindow(object):
                    ConfigFile["rotAngle"] = rotAngle
                LS = LoadAndSave()
                LS.SaveConfigFileDialog(ConfigFile)
+            print("All finished!")
 
     def send(self):
         LS = LoadAndSave()

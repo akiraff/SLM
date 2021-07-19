@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from scipy import fft
 import matplotlib.pyplot as plt
 
 
@@ -536,8 +537,8 @@ class WGS:
             SLM_Field = np.multiply(SLM_Amp, np.exp(1j * SLM_Phase))
             g_coeff0 = g_coeff
             count += 1
-        print(inten_foci_nonzero)
-        print(inten_adapt_nonzero)
+        #print(inten_foci_nonzero)
+        #print(inten_adapt_nonzero)
         print(non_uniform)
         SLM_Amp = np.abs(SLM_Field)
         SLM_Phase = np.angle(SLM_Field)
