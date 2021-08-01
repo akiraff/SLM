@@ -288,24 +288,3 @@ class AberrInputDialog(QDialog):
             print('Value for Z(4,-4) needs to be in (-1,1)! This input will be set to 0 if you do not'
                   ' change it.')
 
-
-if __name__ == '__main__':
-
-    import sys
-    app = QApplication(sys.argv)
-    dialog = AberrInputDialog()
-    if dialog.exec():
-        aberrConfig, aberrConfigzind = dialog.getInputs()
-        print(aberrConfig)
-        print(aberrConfigzind)
-        for config_item in aberrConfig.items():
-             print(config_item)
-        print(aberrConfig.keys())
-        print(aberrConfig.values())
-        keylist = list(aberrConfigzind.keys())
-        vallist = list(aberrConfigzind.values())
-        print(keylist)
-        print(type(keylist[0]))
-        print(vallist)
-        print(type(vallist[0]))
-    exit(0)
