@@ -112,9 +112,14 @@ class LoadAndSave(QWidget):
         options |= QFileDialog.DontUseNativeDialog
         file_name, _ = QFileDialog.getSaveFileName(self, "Save target Amp file:", "", "SLM target Amp Files (*.csv)")
         np.savetxt(file_name, targetAmp, delimiter=",")
+
+    def SaveAberrCorrFileDialog(self, aberrConfig):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save config file:", "", "Aberr correction Config Files (*.npy)")
+        np.save(file_name, aberrConfig)
+
 # check load config file
-#SLMconfig = np.load('SLM_rec_config.npy', allow_pickle=True).item()
-#print(SLMconfig['SLM resX'])
-#LS = LoadAndSave()
-#SLMconfig = LS.LoadConfigFileDialog()
+#SLMconfig = np.load('SLM_config_rec.npy', allow_pickle=True).item()
 #print(SLMconfig)

@@ -305,5 +305,7 @@ if __name__ == '__main__':
         keylist = list(aberrConfigzind.keys())
         vallist = list(aberrConfigzind.values())
         print(keylist)
+        print(type(keylist[0]))
         print(vallist)
+        print(type(vallist[0]))
     exit(0)

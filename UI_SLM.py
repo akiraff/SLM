@@ -14,6 +14,7 @@ import IMGpy
 import slmpy
 from Aberration import Zernike
 from file_dialog_widget import LoadAndSave
+from aberration_dialog_widget import AberrInputDialog
 import sys
 import numpy as np
 import time
@@ -27,7 +28,7 @@ class Ui_MainWindow(object):
         self.displayMode = 0
 
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(750, 531)
+        MainWindow.resize(750, 561)
         if self.displayMode:
            self.slm = slmpy.SLMdisplay(isImageLock=True)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -290,6 +291,15 @@ class Ui_MainWindow(object):
         self.Button_load.setFont(font)
         self.Button_load.setObjectName("Button_load")
 
+        self.Button_loadMultiple = QtWidgets.QPushButton(self.centralwidget)
+        self.Button_loadMultiple.setGeometry(QtCore.QRect(140, 505, 113, 28))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setBold(True)
+        font.setWeight(75)
+        self.Button_loadMultiple.setFont(font)
+        self.Button_loadMultiple.setObjectName("Button_loadMultiple")
+
         self.label_14 = QtWidgets.QLabel(self.centralwidget)
         self.label_14.setGeometry(QtCore.QRect(430, 270, 171, 21))
         font = QtGui.QFont()
@@ -398,6 +408,7 @@ class Ui_MainWindow(object):
             self.Button_calculate.clicked.connect(self.calculate)
             self.Button_calculateAdapt.clicked.connect(self.calculateAdapt)
             self.Button_load.clicked.connect(self.load)
+            self.Button_loadMultiple.clicked.connect(self.loadMultiple)
         self.Loop.editingFinished.connect(self.validating_integerLoop)
         self.arraySizex.editingFinished.connect(self.validating_integerSizex)
         self.arraySizey.editingFinished.connect(self.validating_integerSizey)
@@ -444,8 +455,11 @@ class Ui_MainWindow(object):
         self.Button_send.setText(_translate("MainWindow", "Load and Send"))
         self.Button_stop.setStatusTip(_translate("MainWindow", "Stop SLM."))
         self.Button_stop.setText(_translate("MainWindow", "Stop"))
-        self.Button_load.setStatusTip(_translate("MainWindow", "Load the config and phase file, add aberration correction, then save."))
+        self.Button_load.setStatusTip(_translate("MainWindow", "Load the config and phase file, add one zernike polynomial for aberration correction, then save."))
         self.Button_load.setText(_translate("MainWindow", "Load"))
+        self.Button_loadMultiple.setStatusTip(
+            _translate("MainWindow", "Load the config and phase file, add multiple zernike polynomials for aberration correction, then save."))
+        self.Button_loadMultiple.setText(_translate("MainWindow", "Load Multiple"))
         self.label_9.setText(_translate("MainWindow", "Array spacing (micron)"))
         self.label_10.setText(_translate("MainWindow", "Tweezer "))
         self.label_11.setText(_translate("MainWindow", "Array size"))
@@ -865,16 +879,73 @@ class Ui_MainWindow(object):
             SLM_screen_WGS_aberr_mod = np.mod(SLM_screen_WGS_aberr_add, 2*np.pi)
             SLM_screen_WGS_aberr = np.multiply((SLM_screen_WGS_aberr_mod <= np.pi), SLM_screen_WGS_aberr_mod)  \
                                   + np.multiply((SLM_screen_WGS_aberr_mod > np.pi), SLM_screen_WGS_aberr_mod - 2*np.pi)
-            print(np.max(SLM_screen_WGS_aberr_mod))
-            print(np.min(SLM_screen_WGS_aberr_mod))
-            print(np.max(SLM_screen_WGS))
-            print(np.min(SLM_screen_WGS))
+            #print(np.max(SLM_screen_WGS_aberr_mod))
+            #print(np.min(SLM_screen_WGS_aberr_mod))
+            #print(np.max(SLM_screen_WGS))
+            #print(np.min(SLM_screen_WGS))
            # print(np.max(SLM_screen_WGS_aberr_add))
             print(np.max(SLM_screen_WGS_aberr))
             print(np.min(SLM_screen_WGS_aberr))
-            print("Finally, we add the oberration and save the phase file.")
+            print("Finally, we add the aberration and save the phase file.")
             LS.SaveFileDialog(SLM_screen_WGS_aberr)
             print("All finished!")
+
+    def loadMultiple(self):
+        dialog = AberrInputDialog()
+        if dialog.exec():
+            aberrConfig, aberrConfigzind = dialog.getInputs()
+            print(aberrConfig)
+            print(aberrConfigzind)
+            ind_Zernike_list = list(aberrConfigzind.keys())
+            percent_list = list(aberrConfigzind.values())
+            # load SLM config and phase file
+            LS = LoadAndSave()
+            print("Now we save the aberration correction Config:")
+            LS.SaveAberrCorrFileDialog(aberrConfig)
+            print("We first load SLM config:")
+            SLMconfig = LS.LoadConfigFileDialog()
+            print(SLMconfig)
+            SLMResX = SLMconfig['SLM resX']
+            SLMResY = SLMconfig['SLM resY']
+            pixelpitch = SLMconfig['pixel pitch']
+            aperture_radius = SLMconfig['aperture radius']
+            print("Next, we load the SLM screen phase file:")
+            SLM_screen_WGS = LS.LoadFileDialog()
+            try:
+                sz = np.size(SLM_screen_WGS)
+                if sz != SLMResX * SLMResY:
+                    raise ValueError("Input SLM phase matrix does not match its SLMConfig, you might "
+                                     "mistakenly load SLM phase file.")
+            except ValueError as ve:
+                print(ve)
+
+            SLM_aberr_screen_sum = 0
+            for j in range(len(ind_Zernike_list)):
+                myOberrationCorr = Zernike(SLMResX, SLMResY, pixelpitch, aperture_radius, ind_Zernike_list[j], percent_list[j])
+                SLM_aberr_screen, m, n = myOberrationCorr.phase_Zernike(Plot = False, Save=False)
+                if self.phaseContinue.isChecked():
+                    SLM_aberr_screen = myOberrationCorr.phase_Zernike_continuous(m, n, Plot = False)
+                SLM_aberr_screen_sum  = SLM_aberr_screen_sum + SLM_aberr_screen
+            print(np.max(SLM_aberr_screen_sum))
+            print(np.min(SLM_aberr_screen_sum))
+            # convert total phase between -pi and pi
+            SLM_screen_WGS_aberr_add = SLM_screen_WGS + SLM_aberr_screen_sum
+            min_add = np.min(SLM_screen_WGS_aberr_add)
+            # print(min_add)
+            if min_add < 0:
+                ind_2pi = np.abs(np.floor(np.divide(min_add, 2 * np.pi)))
+                print(ind_2pi)
+                SLM_screen_WGS_aberr_add = SLM_screen_WGS_aberr_add + ind_2pi * 2 * np.pi
+            SLM_screen_WGS_aberr_mod = np.mod(SLM_screen_WGS_aberr_add, 2 * np.pi)
+            SLM_screen_WGS_aberr = np.multiply((SLM_screen_WGS_aberr_mod <= np.pi), SLM_screen_WGS_aberr_mod) \
+                                   + np.multiply((SLM_screen_WGS_aberr_mod > np.pi),
+                                                 SLM_screen_WGS_aberr_mod - 2 * np.pi)
+            print(np.max(SLM_screen_WGS_aberr))
+            print(np.min(SLM_screen_WGS_aberr))
+            print("Finally, we add the aberration and save the phase file.")
+            LS.SaveFileDialog(SLM_screen_WGS_aberr)
+            print("All finished!")
+
 
     def validating_integerLoop(self):
         validating_rule = QDoubleValidator(0, 100, 0)
@@ -885,7 +956,7 @@ class Ui_MainWindow(object):
             self.Loop.setText("")
 
     def validating_integerSizex(self):
-        validating_rule = QDoubleValidator(2, 500, 0)
+        validating_rule = QDoubleValidator(1, 500, 0)
       #  print(validating_rule.validate(self.arraySizex.text(), 14))
         if validating_rule.validate(self.arraySizex.text(), 14)[0] == QValidator.Acceptable:
             self.arraySizex.setFocus()
@@ -893,7 +964,7 @@ class Ui_MainWindow(object):
             self.arraySizex.setText("")
 
     def validating_integerSizey(self):
-        validating_rule = QDoubleValidator(2, 500, 0)
+        validating_rule = QDoubleValidator(1, 500, 0)
       #  print(validating_rule.validate(self.arraySizey.text(), 14))
         if validating_rule.validate(self.arraySizey.text(), 14)[0] == QValidator.Acceptable:
             self.arraySizey.setFocus()
