@@ -120,6 +120,14 @@ class LoadAndSave(QWidget):
         file_name, _ = QFileDialog.getSaveFileName(self, "Save config file:", "", "Aberr correction Config Files (*.npy)")
         np.save(file_name, aberrConfig)
 
+    def LoadAberrCorrConfigFileDialog(self):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load aberration correction config files:", "", "Aberr correction Config Files (*.npy)")
+        aberrConfigzind = np.load(file_name, allow_pickle=True).item()
+        return aberrConfigzind
+
 # check load config file
 #SLMconfig = np.load('SLM_config_rec.npy', allow_pickle=True).item()
 #print(SLMconfig)

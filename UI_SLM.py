@@ -352,12 +352,20 @@ class Ui_MainWindow(object):
         self.saveConfig.setObjectName("saveConfig")
 
         self.phaseContinue = QtWidgets.QCheckBox(self.centralwidget)
-        self.phaseContinue.setGeometry(QtCore.QRect(250, 465, 161, 41))
+        self.phaseContinue.setGeometry(QtCore.QRect(270, 465, 161, 41))
         font = QtGui.QFont()
         font.setFamily("Arial")
         font.setPointSize(10)
         self.phaseContinue.setFont(font)
         self.phaseContinue.setObjectName("phaseContinue")
+
+        self.fromConfigFile = QtWidgets.QCheckBox(self.centralwidget)
+        self.fromConfigFile.setGeometry(QtCore.QRect(270, 485, 161, 41))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.fromConfigFile.setFont(font)
+        self.fromConfigFile.setObjectName("From config file")
 
         self.label_17 = QtWidgets.QLabel(self.centralwidget)
         self.label_17.setGeometry(QtCore.QRect(90, 170, 231, 21))
@@ -472,6 +480,7 @@ class Ui_MainWindow(object):
         self.save.setText(_translate("MainWindow", "Save?"))
         self.saveConfig.setText(_translate("MainWindow", "Save config?"))
         self.phaseContinue.setText(_translate("MainWindow", "Continue?"))
+        self.fromConfigFile.setText(_translate("MainWindow", "From config file?"))
         self.label_17.setText(_translate("MainWindow", "Distance from origin (micron)"))
         self.label_18.setText(_translate("MainWindow", "x"))
         self.label_19.setText(_translate("MainWindow", "y"))
@@ -891,17 +900,28 @@ class Ui_MainWindow(object):
             print("All finished!")
 
     def loadMultiple(self):
-        dialog = AberrInputDialog()
-        if dialog.exec():
-            aberrConfig, aberrConfigzind = dialog.getInputs()
-            print(aberrConfig)
+        ready = 0
+        if self.fromConfigFile.isChecked():
+            LS = LoadAndSave()
+            aberrConfigzind = LS.LoadAberrCorrConfigFileDialog()
             print(aberrConfigzind)
             ind_Zernike_list = list(aberrConfigzind.keys())
             percent_list = list(aberrConfigzind.values())
+            ready = 1
+        else:
+            dialog = AberrInputDialog()
+            if dialog.exec():
+                aberrConfig, aberrConfigzind = dialog.getInputs()
+                print(aberrConfig)
+                print(aberrConfigzind)
+                ind_Zernike_list = list(aberrConfigzind.keys())
+                percent_list = list(aberrConfigzind.values())
+                ready = 1
             # load SLM config and phase file
+        if ready:
             LS = LoadAndSave()
             print("Now we save the aberration correction Config:")
-            LS.SaveAberrCorrFileDialog(aberrConfig)
+            LS.SaveAberrCorrFileDialog(aberrConfigzind)
             print("We first load SLM config:")
             SLMconfig = LS.LoadConfigFileDialog()
             print(SLMconfig)
