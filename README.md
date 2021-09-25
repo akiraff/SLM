@@ -6,3 +6,6 @@ The detailed information is included in the reference: https://www.osapublishing
         1 Calculate mode: SLM disconnected, calculate phase pattern with phase fixed WGS.
         2 Display mode: SLM connected, choose caculated phase pattern and send it to SLM screen.
     To toggle between the two mode, one needs to change display mode in the UI_SLM.py script. 
+#### UI input
+    pixel pitch: this number is the pixel pitch of the SLM.
+    Array spacing: Specify the array spacing in the focal plane along x and y direction, in unit of micron.
