@@ -7,5 +7,12 @@ The detailed information is included in the reference: https://www.osapublishing
         2 Display mode: SLM connected, choose caculated phase pattern and send it to SLM screen.
     To toggle between the two mode, one needs to change display mode in the UI_SLM.py script. 
 #### UI input
-    pixel pitch: this number is the pixel pitch of the SLM.
+    **pixel pitch**: this number is the pixel pitch of the SLM.
     Array spacing: Specify the array spacing in the focal plane along x and y direction, in unit of micron.
+    Distance from origine: The closest foci point on the focal plane to the zero order spot, in unit of micron.
+    Geometry: Foci array geometry. Currently you can choose from square, triangle and kagome. You can add more
+              by some straight forward modification in tweezer class in IMG.py.
+    rot angle: Rotate the foci array around the zero order spot. You need to check the checkbox Rotate? if you
+               want this rotation.
+    Array size: Array size along x and along y
+    
