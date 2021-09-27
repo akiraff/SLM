@@ -15,10 +15,11 @@ The detailed information is included in the reference: https://www.osapublishing
     rot angle: Rotate the foci array around the zero order spot. You need to check the checkbox Rotate? if you
                want this rotation.
     Array size: Array size along x and along y
-    FFT grid (bit): This number is the size of FFT grid to perform WGS, in unit of bit. Larger number will be beneficial 
-                    for more complicated foci intensity pattern, and also slower. For a regular lattice pattern, 12 is 
-                    good enough.
-    Threshold: This number is for phase fixed method. When the uniformity of the foci array is below this value, WGS will
-               stop evolving the phase. This method speeds up the convergence dramatically. Usually 0.01-0.05 will work.
+    FFT grid (bit): This number is the size of FFT grid to perform WGS, in unit of bit. Larger number will be
+                    beneficial for more complicated foci intensity pattern, and also slower. For a regular
+                    lattice pattern, 12 is good enough.
+    Threshold: This number is for phase fixed method. When the uniformity of the foci array is below this value,
+               WGS will stop evolving the phase. This method speeds up the convergence dramatically. Usually 
+               0.01-0.05 will work.
     Loop: The number of loops used in WGS. 20 is a good input.
     
