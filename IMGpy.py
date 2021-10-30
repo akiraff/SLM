@@ -329,6 +329,56 @@ class IMG:
            self.plotFocalplane(targetAmp_foci_rot, location_rot)
         return targetAmp_foci_rot, location_rot
 
+    def translate_targetAmp(self, targetAmp, location, Plot = True):
+        # This function translate the target amplitude such that it is centered on the screen
+        # Input target Amp should be with no zero order offset and no rotation
+        # X is column
+        col = np.size(targetAmp, axis=1)
+        # Y is row
+        row = np.size(targetAmp, axis=0)
+        # Find trap location
+        targetAmpmask = (targetAmp > 0) * 1
+        Traploc = np.argwhere(targetAmpmask == 1)
+        Traprow = Traploc[:, 0]
+        Trapcol = Traploc[:, 1]
+        centerX = col / 2
+        centerY = row / 2
+        # calculate the translation distance. The site that is the farthest from the origin has the
+        # minimal coordinate numbers.
+        rowmin = np.min(Traprow)
+        colmin = np.min(Trapcol)
+        d_max = np.sqrt((rowmin-centerY)**2 + (colmin-centerX)**2)
+        row_vec = np.abs((rowmin-centerY)/d_max)
+        col_vec = np.abs((colmin-centerX)/d_max)
+        d_translate = 0.5 * d_max
+        # translate the array
+        Traprow_trans = np.round(Traprow + d_translate * row_vec)
+        Trapcol_trans = np.round(Trapcol + d_translate * col_vec)
+        # Populate the targetAmp after array translation
+        targetAmp_foci_translate = np.zeros_like(targetAmp)
+        for index in range(np.size(Trapcol_trans)):
+            # trap location after translation
+            row_trans = Traprow_trans[index]
+            col_trans = Trapcol_trans[index]
+            # initial trap location
+            row = Traprow[index]
+            col = Trapcol[index]
+            targetAmp_foci_translate[int(row_trans), int(col_trans)] = targetAmp[int(row), int(col)]
+        # Find new location after translation
+        startRow = location[0]
+        endRow = location[1]
+        startCol = location[2]
+        endCol = location[3]
+        startRow_trans = np.round(startRow + d_translate * row_vec)
+        endRow_trans = np.max(Traprow_trans)
+        startCol_trans = np.round(startCol + d_translate * col_vec)
+        endCol_trans = np.max(Trapcol_trans)
+        location_translate = [int(np.min([startRow, startRow_trans])), int(np.max([endRow, endRow_trans])),
+                        int(np.min([startCol, startCol_trans])), int(np.max([endCol, endCol_trans]))]
+        if Plot:
+           self.plotFocalplane(targetAmp_foci_translate, location_translate)
+        return targetAmp_foci_translate, location_translate
+
 class Tweezer:
     def __init__(self,location,arraysize):
         # Here the location is chosen for the point nearest to the origin (zero order), I choose this point to locate at

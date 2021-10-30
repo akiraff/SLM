@@ -238,6 +238,14 @@ class Ui_MainWindow(object):
         self.rot.setFont(font)
         self.rot.setObjectName("rot")
 
+        self.translate = QtWidgets.QCheckBox(self.centralwidget)
+        self.translate.setGeometry(QtCore.QRect(15, 350, 161, 41))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(10)
+        self.translate.setFont(font)
+        self.translate.setObjectName("translate")
+
         self.label_22 = QtWidgets.QLabel(self.centralwidget)
         self.label_22.setGeometry(QtCore.QRect(0, 420, 121, 41))
         font = QtGui.QFont()
@@ -495,6 +503,7 @@ class Ui_MainWindow(object):
         self.label_25.setText(_translate("MainWindow", "Display"))
         self.label_26.setText(_translate("MainWindow", "rot angle (deg)"))
         self.rot.setText(_translate("MainWindow", "Rotate?"))
+        self.translate.setText(_translate("MainWindow", "Center?"))
 
     def calculate(self):
         if self.pixelpitch.text() == "":
@@ -563,6 +572,11 @@ class Ui_MainWindow(object):
             else:
                 rot = 0
             print("Rotate?", rot)
+            if self.translate.isChecked():
+                translate = 1
+            else:
+                translate = 0
+            print("Center?", translate)
             if self.mask.isChecked():
                 mask = 1
             else:
@@ -586,9 +600,11 @@ class Ui_MainWindow(object):
             myIMG = IMGpy.IMG(pixelpitch, [arraysizeBit, arraysizeBit], beamwaist, focallength, magnification,
                               wavelength, maskradius, res)
             gaussianAmp, gaussianPhase = myIMG.initSLMImage(mask=mask, Plot=False)
+            if translate:
+                distance = 0
             if lattice == "Rec":
                 Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_RecLattice(distance, [spacingx, spacingy],
-                                                                                            [arraysizex, arraysizey], Plot=False)
+                                                                                            [arraysizex, arraysizey], Plot=True)
             elif lattice == "Kagome":
                 Focalpitchx, Focalpitchy, targetAmp, location = myIMG.initFocalImage_KagomeLattice(distance,
                                                                                             [spacingx, spacingy],
@@ -601,6 +617,10 @@ class Ui_MainWindow(object):
                                                                                                     arraysizey], Triangle=True,
                                                                                                    Plot=True)
             print("Focal pitch size: ", Focalpitchx)
+            if translate:
+                targetAmp_translate, location_translate = myIMG.translate_targetAmp(targetAmp, location, Plot = True)
+                location = location_translate
+                targetAmp = targetAmp_translate
             if rot:
                 targetAmp_rot, location_rot = myIMG.rotate_targetAmp(targetAmp, rotAngle, location, Plot = True)
                 location = location_rot
@@ -650,6 +670,7 @@ class Ui_MainWindow(object):
                 ConfigFile["SLM resX"] = resX
                 ConfigFile["SLM resY"] = resY
                 ConfigFile["rot"] = rot
+                ConfigFile["center"] = translate
                 if rot:
                     ConfigFile["rotAngle"] = rotAngle
                 LS = LoadAndSave()
@@ -1016,7 +1037,7 @@ class Ui_MainWindow(object):
             self.spacingy.setText("")
 
     def validating_floatdistance(self):
-        validating_rule = QDoubleValidator(0, 500, 4)
+        validating_rule = QDoubleValidator(0, 5000, 4)
        # print(validating_rule.validate(self.distance.text(), 14))
         if validating_rule.validate(self.distance.text(), 14)[0] == QValidator.Acceptable:
             self.distance.setFocus()
