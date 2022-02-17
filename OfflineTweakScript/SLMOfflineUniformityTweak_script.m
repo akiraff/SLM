@@ -25,8 +25,8 @@ xy=[284, 116];
 xo = 864;
 yo = 260;
 %% Now fit for the array intensity
-level=3;
-num_sites=38;
+level=1.5;
+num_sites=41;
 gain =0.01;
 spacing = 379/3.45;
 bGaussian = 0;
@@ -35,13 +35,16 @@ bmanual = 0;
 manualguess = 0;
 trapArray=trapArraysCam_GS2D(img_data_noZero, level, num_sites,gain,spacing,bGaussian, bmodguess, bmanual, manualguess);
 %% Remove the wrong site
-wrong_peak = [874,614];
+wrong_peak = [476 549,502,545];
 trapGood = WrongSitesRemover(trapArray.Trap, wrong_peak);
+%% Add correct site
+right_trap = [554, 502, 314; 545, 575, 28];
+trapGood1 = RightSitesAdder(trapGood, right_trap);
 %% Now plug in the guess and do a Gaussian fit
 bGaussian = 1;
 bmodguess = 0;
 bmanual = 1; 
-manualguess = trapGood;
+manualguess = trapGood1;
 num_sites=36;
 trapArray=trapArraysCam_GS2D(img_data_noZero, level, num_sites,gain,spacing,bGaussian, bmodguess, bmanual, manualguess);
 %%
@@ -102,3 +105,5 @@ axis([0.1 2 0 15]);
 nacstools.display.makePretty('figure',h, 'width', 10, 'height', 8, 'textFontSize', 10, 'axisFontSize', 10);
 %%
 csvwrite('trapInt_norm_R0_0217.csv', trapInt_norm)
+%%
+csvwrite('trapInt_norm_R1_0217.csv', trapInt_norm)
