@@ -26,7 +26,7 @@ xo = 864;
 yo = 260;
 %% Now fit for the array intensity
 level=3;
-num_sites=38;
+num_sites=37;
 gain =0.01;
 spacing = 379/3.45;
 bGaussian = 0;
@@ -35,15 +35,7 @@ bmanual = 0;
 manualguess = 0;
 trapArray=trapArraysCam_GS2D(img_data_noZero, level, num_sites,gain,spacing,bGaussian, bmodguess, bmanual, manualguess);
 %% Remove the wrong site
-wrong_peak = [874,614];
-trapGood = WrongSitesRemover(trapArray.Trap, wrong_peak);
-%% Now plug in the guess and do a Gaussian fit
-bGaussian = 1;
-bmodguess = 0;
-bmanual = 1; 
-manualguess = trapGood;
-num_sites=36;
-trapArray=trapArraysCam_GS2D(img_data_noZero, level, num_sites,gain,spacing,bGaussian, bmodguess, bmanual, manualguess);
+trapGood = WrongSitesRemover(trapArr, wrong_peak)
 %%
 save("img_data_noZero.mat","img_data_noZero");
 %% now save trap array
@@ -62,7 +54,7 @@ trap_sort_rloc=[trap_sort, rloc];
 sz = size(trap_sort_rloc);
 trap_sort_final=zeros(sz);
 row = sz(1);
-delta=379/3.45/2*sqrt(3)/2;
+delta=379/3.45/2;
 row_val = trap_sort_rloc(:,3);
 row_end = [];
 for j = 1:row
@@ -75,7 +67,6 @@ for j = 1:row
     end
 end
 % populate first row
-disp(row_end(1))
 trap_row_1 = trap_sort_rloc(1:row_end(1),:);
 trap_row_1_sort = sortrows(trap_row_1,4,'ascend');
 trap_sort_final(1:row_end(1),:) = trap_row_1_sort;
