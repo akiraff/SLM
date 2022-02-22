@@ -5,6 +5,8 @@ data = NaCsData('20220221','121446', 'C:\Users\Aki_F\Postdoc project\matlab_seq\
 data = NaCsData('20220221','134650','N:\NaCsLab\Data\');
 %%
 data = NaCsData('20220221','191952','N:\NaCsLab\Data\');
+%%
+data = NaCsData('20220221','203512','N:\NaCsLab\Data\');
 %% 
 CsArray = CsArrayData(data);
 %%
@@ -44,4 +46,4 @@ nacstools.display.makePretty(h, 'width', 15, 'height', 10, 'textFontSize', 12, '
 %%
 Inten_Onatom = Inten_nooffset/sum(Inten_nooffset)
 %%
-csvwrite('trapInt_norm_onAtom_R1_0221.csv', Inten_Onatom)
+csvwrite('trapInt_norm_onAtom_R2_0221.csv', Inten_Onatom)
