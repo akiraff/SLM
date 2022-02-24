@@ -7,6 +7,8 @@ data = NaCsData('20220221','134650','N:\NaCsLab\Data\');
 data = NaCsData('20220221','191952','N:\NaCsLab\Data\');
 %%
 data = NaCsData('20220221','203512','N:\NaCsLab\Data\');
+%%
+data = NaCsData('20220222','102011','N:\NaCsLab\Data\');
 %% 
 CsArray = CsArrayData(data);
 %%
@@ -36,6 +38,13 @@ ylabel('Light shifts (MHZ)');
 %axis([0 1 5 20]);
 nacstools.display.makePretty(h, 'width', 15, 'height', 10, 'textFontSize', 12, 'axisFontSize', 12);
 %%
+h=figure(202);clf;
+plot(site, IntenCenter, 'ro', 'Linewidth', 1.5);
+xlabel('site');
+ylabel('Center dip');
+%axis([0 1 5 20]);
+nacstools.display.makePretty(h, 'width', 15, 'height', 10, 'textFontSize', 12, 'axisFontSize', 12);
+%%
 site = 1:36;
 figure(201);clf;
 plot(site, Inten_nooffset, 'bo', 'Linewidth', 1.5);
@@ -45,5 +54,7 @@ ylabel('Light shifts (MHZ)');
 nacstools.display.makePretty(h, 'width', 15, 'height', 10, 'textFontSize', 12, 'axisFontSize', 12);
 %%
 Inten_Onatom = Inten_nooffset/sum(Inten_nooffset)
+%%
+(var(Inten_Onatom))^0.5/mean(Inten_Onatom)
 %%
 csvwrite('trapInt_norm_onAtom_R2_0221.csv', Inten_Onatom)
