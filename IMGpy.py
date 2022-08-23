@@ -1,6 +1,5 @@
 import numpy as np
 import scipy as sp
-from scipy import fft
 import matplotlib.pyplot as plt
 
 
@@ -673,3 +672,27 @@ class WGS:
         # This function change a phase number between -pi to pi to an integer between 0 to 255
         SLM_bit = np.around((SLM_IMG+np.pi)/(2*np.pi)*255).astype('uint8')
         return SLM_bit
+
+
+class arbFocalPattern:
+    # This class receives a nonzero element coordinate array and populate a targetAmp matrix
+    def __init__(self, arraySizeBit):
+        # This class deals with arbitrary-set focal pattern
+        self.arraySizeBitx = arraySizeBit[0]
+        self.arraySizeBity = arraySizeBit[1]
+        self.ImgResX = 2 ** (int(self.arraySizeBitx))
+        self.ImgResY = 2 ** (int(self.arraySizeBity))
+
+    def assembleFPfromNonZeroElement(self, NZarray):
+        # NZarray is an numpy array of non-zero element coordinate in the form of [X,Y] = [Col, Row]
+        targetAmp = np.zeros((int(self.ImgResY), int(self.ImgResX)))
+        rows, cols = NZarray.shape
+        total_sites = rows
+        intensityPersite = 1/total_sites
+        for index in range(total_sites):
+            locs = NZarray[index,:]
+            print(locs)
+            col = locs[0]
+            row = locs[1]
+            targetAmp[int(row),int(col)] = intensityPersite**0.5
+        return targetAmp
