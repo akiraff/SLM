@@ -546,8 +546,8 @@ class WGS:
         g_coeff0 = 1
         Focal_phase = 0
         fftAmp = 0
-        inten_foci_nonzero = 0
-        inten_adapt_nonzero = 0
+        #inten_foci_nonzero = 0
+        #inten_adapt_nonzero = 0
         targetInt = np.square(targetAmp_foci)/np.sum(np.square(targetAmp_foci))
         targetInt_nonzero = np.abs(targetInt[targetInt != 0])
         print(targetInt_nonzero)
@@ -696,3 +696,17 @@ class arbFocalPattern:
             row = locs[1]
             targetAmp[int(row),int(col)] = intensityPersite**0.5
         return targetAmp
+
+    def assembleFPfromNonZeroElementAdapt(self, NZarray, IntenArray):
+        # NZarray is an numpy array of non-zero element coordinate in the form of [X,Y] = [Col, Row]
+        # IntenArray is the measured intensity values ordered the same way as NZarray
+        targetAmp_foci = np.zeros((int(self.ImgResY), int(self.ImgResX)))
+        rows, cols = NZarray.shape
+        total_sites = rows
+        for index in range(total_sites):
+            locs = NZarray[index, :]
+            print(locs)
+            col = locs[0]
+            row = locs[1]
+            targetAmp_foci[int(row), int(col)] = (IntenArray[index])**0.5
+        return targetAmp_foci
