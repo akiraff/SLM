@@ -31,7 +31,7 @@ distance = SLMconfig['distance from origin']
 #arraysizex = SLMconfig['array size x']
 #arraysizey = SLMconfig['array size y']
 #arraysizeBit = SLMconfig['FFT grid size (bit)']
-arraysizeBit = 13
+arraysizeBit = 12
 focallength = SLMconfig['Focal length']
 magnification = SLMconfig['Magnification']
 wavelength = SLMconfig['wave length']
@@ -55,11 +55,15 @@ ring_points = 32
 angle = 2*np.pi/ring_points
 ring_radius = ring_spacing/2/(np.sin(angle/2))
 # First point of the circle determined by the offset
-dm = round(distance / np.sqrt(2) / pixelpitch)
-dn = round(distance / np.sqrt(2) / pixelpitch)
+#dm = round(distance*6.22193/12.5 / np.sqrt(2) / pixelpitch)
+#dn = round(distance / np.sqrt(2) / pixelpitch)
+print(pixelpitch)
 ImgResX = 2 ** (int(arraysizeBit))
 ImgResY = 2 ** (int(arraysizeBit))
 Focalpitch = wavelength*focallength/ImgResX/(pixelpitch*magnification)
+print(Focalpitch)
+dm = round(distance*6.22193/12.5 / np.sqrt(2) / Focalpitch)
+dn = round(distance*6.22193/12.5 / np.sqrt(2) / Focalpitch)
 #Focalpitchy = wavelength*focallength/ImgResX/(pixelpitch*magnification)
 mcenter = ImgResX / 2
 ncenter = ImgResY / 2
@@ -226,8 +230,8 @@ print("location = ", location)
 print("locationIMG = ", locationIMG)
 print("Phase image shape:", SLM_Screen_WGS.shape)
 # Save the SLM phase file and prepare for adapted WGS
-save = 1
-saveConfig = 1
+save = 0
+saveConfig = 0
 if __name__ == '__main__':
 
      import sys
