@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
     #           displayMode = 0, not connect to SLM, calculate Phase pattern through phase-fixed WGS
     def setupUi(self, MainWindow):
         # Please set displayMode here:
-        self.displayMode = 0
+        self.displayMode = 1
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(750, 561)
@@ -812,7 +812,7 @@ class Ui_MainWindow(object):
             if save:
                LS = LoadAndSave()
                LS.SaveFileDialog(SLM_Screen_WGS)
-               LS.SavePhaseFileDialog(SLM_Phase)
+               LS.SavePhaseFileDialog(SLM_Phase_adapt)  #SLM_Phase
                LS.SaveTargetAmpFileDialog(targetAmp_adapt)
             if saveConfig:
                ConfigFile = {}
