@@ -8,7 +8,7 @@ from file_dialog_widget import LoadAndSave
 from PyQt5.QtWidgets import QApplication
 
 # Load SLM config file
-file_name = 'SLMConfig/SLM_config_ring.npy'
+file_name = 'SLMConfig/SLM_config_ring_130_384433.npy'
 SLMconfig = np.load(file_name, allow_pickle=True).item()
 
 pixelpitch = SLMconfig['pixel pitch']
@@ -91,7 +91,7 @@ except ValueError as ve:
      print(ve)
 
 # Calculate adapted WGS
-Loop = 5
+Loop = 15
 threshold = 0.02
 WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp_foci)
 SLM_Amp_adapt, SLM_Phase_adapt, Focal_Amp_adapt, non_uniform_adapt, targetAmp_adapt = WGScal.fftLoop_adapt(
@@ -103,3 +103,12 @@ myIMG.plotFocalplane(fftSLM_IMG_Amp_norm, locationIMG)
 print("location = ", location)
 print("locationIMG = ", locationIMG)
 print("Phase image shape:", SLM_Screen_WGS.shape)
+
+# Save the SLM phase file and prepare for adapted WGS
+save = 1
+if save:
+   LS = LoadAndSave()
+   LS.SaveFileDialog(SLM_Screen_WGS)
+   LS.SavePhaseFileDialog(SLM_Phase_adapt)
+   LS.SaveTargetAmpFileDialog(targetAmp_adapt)
+print("All finished!")
