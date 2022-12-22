@@ -31,7 +31,7 @@ distance = SLMconfig['distance from origin']
 #arraysizex = SLMconfig['array size x']
 #arraysizey = SLMconfig['array size y']
 #arraysizeBit = SLMconfig['FFT grid size (bit)']
-arraysizeBit = 12
+arraysizeBit = 13
 focallength = SLMconfig['Focal length']
 magnification = SLMconfig['Magnification']
 wavelength = SLMconfig['wave length']
@@ -50,7 +50,7 @@ if rot:
 
 # Generate ring pattern
 # Define ring pattern geometry,unit micron. Here our objective focal length is 500 mm
-ring_spacing = 130*1e-6
+ring_spacing = 105*1e-6
 ring_points = 32
 angle = 2*np.pi/ring_points
 ring_radius = ring_spacing/2/(np.sin(angle/2))
@@ -159,8 +159,8 @@ def CreateResVertical(vert, num_vert, uvec, vertlist, res_center):
      [r,c] = np.shape(res)
      for index in range(r):
          res_row = res[index,:]
-         print(res_row)
-         print(uvec)
+         #print(res_row)
+         #print(uvec)
          if vert > 0:
            res_tmp = res_row + uvec*vertlist[int(round(vert-1))]
          else:
@@ -171,15 +171,25 @@ def CreateResVertical(vert, num_vert, uvec, vertlist, res_center):
 # Use the above function to create vertical row
 uvec = np.array([uvecmp, uvecnp])
 res_vert1 = CreateResVertical(1,9,uvec,vertList,reccoor_arr_center)
+res_vert1 = np.delete(res_vert1, [1,7], axis=0)
 res_vert2 = CreateResVertical(2,7,uvec,vertList,reccoor_arr_center)
 res_vert3 = CreateResVertical(3,5,uvec,vertList,reccoor_arr_center)
+res_vert3 = np.delete(res_vert3, [1,3], axis=0)
 res_vert4 = CreateResVertical(4,3,uvec,vertList,reccoor_arr_center)
+res_vert4 = np.delete(res_vert4, 1, axis = 0)
 res_vertm1 = CreateResVertical(-1,9,uvec,vertList,reccoor_arr_center)
+res_vertm1 = np.delete(res_vertm1, [1,7], axis=0)
 res_vertm2 = CreateResVertical(-2,7,uvec,vertList,reccoor_arr_center)
 res_vertm3 = CreateResVertical(-3,5,uvec,vertList,reccoor_arr_center)
+res_vertm3 = np.delete(res_vertm3, [1,3], axis=0)
 res_vertm4 = CreateResVertical(-4,3,uvec,vertList,reccoor_arr_center)
-#print(res_vert1)
+res_vertm4 = np.delete(res_vertm4, 1, axis = 0)
+print("Display reservoir coor")
+print(res_vert1)
+print(res_vert1[0])
 # Create coordinate lists for reservoir atoms
+reccoor_arr_center = np.delete(reccoor_arr_center, [0,8], axis = 0)
+
 reccoor_arr = np.concatenate((res_vert4, res_vert3, res_vert2, res_vert1, reccoor_arr_center, res_vertm1, res_vertm2, res_vertm3, res_vertm4),axis=0)
 print(reccoor_arr)
 
@@ -208,7 +218,7 @@ if rot:
     location = location_rot
     targetAmp = targetAmp_rot
 myIMG.plotFocalplane(targetAmp, location)
-Loop = 5
+Loop = 15
 threshold = 0.02
 WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
 SLM_Amp, SLM_Phase, Focal_Amp, non_uniform = WGScal.fftLoop(Loop, threshold)
@@ -230,8 +240,8 @@ print("location = ", location)
 print("locationIMG = ", locationIMG)
 print("Phase image shape:", SLM_Screen_WGS.shape)
 # Save the SLM phase file and prepare for adapted WGS
-save = 0
-saveConfig = 0
+save = 1
+saveConfig = 1
 if __name__ == '__main__':
 
      import sys
