@@ -22,6 +22,11 @@ from PyQt5.QtWidgets import QApplication
 file_name = 'SLMConfig/SLM_config_ring_130_384433.npy'
 SLMconfig = np.load(file_name, allow_pickle=True).item()
 
+# Load measured theta
+csvfile = 'RingPattern/onAtom_24atomRing109/theta_list_24atom_109_r0.csv'
+theta_list = np.genfromtxt(csvfile, delimiter=',')
+print(theta_list)
+
 pixelpitch = SLMconfig['pixel pitch']
 #spacingx = SLMconfig['arr spacing x']
 #spacingy = SLMconfig['arr spacing y']
@@ -30,7 +35,7 @@ distance = SLMconfig['distance from origin']
 #arraysizex = SLMconfig['array size x']
 #arraysizey = SLMconfig['array size y']
 #arraysizeBit = SLMconfig['FFT grid size (bit)']
-arraysizeBit = 11
+arraysizeBit = 13
 focallength = SLMconfig['Focal length']
 magnification = SLMconfig['Magnification']
 wavelength = SLMconfig['wave length']
@@ -49,7 +54,7 @@ if rot:
 
 # Generate ring pattern
 # Define ring pattern geometry,unit micron. Here our objective focal length is 500 mm
-ring_spacing = 105*1e-6
+ring_spacing = 109*1e-6
 ring_points = 24
 angle = 2*np.pi/ring_points
 ring_radius = ring_spacing/2/(np.sin(angle/2))
@@ -83,7 +88,8 @@ for index in range(ring_points):
     if index == 0:
         ringcoor_arr[index,:] = [m, n]
     else:
-        theta = 2*np.pi / ring_points * index
+       # theta = 2*np.pi / ring_points * index
+        theta = theta_list[index - 1] * np.pi / 180
         m_next = round((m-ring_centerX)*np.cos(theta) - (n-ring_centerY)*np.sin(theta) + ring_centerX)
         n_next = round((m-ring_centerX)*np.sin(theta) + (n-ring_centerY)*np.cos(theta) + ring_centerY)
         ringcoor_arr[index, :] = [m_next, n_next]
@@ -92,10 +98,22 @@ print(ringcoor_arr)
 # uniform spacing
 spacing = ring_spacing / Focalpitch
 
+# Create reservoir outside the ring
+# generate coordinate value from uniform ring coordinates
+ringcoor_arr0 = np.zeros([ring_points, 2])
+for index in range(ring_points):
+    if index == 0:
+        ringcoor_arr0[index,:] = [m, n]
+    else:
+        theta = 2*np.pi / ring_points * index
+        m_next = round((m-ring_centerX)*np.cos(theta) - (n-ring_centerY)*np.sin(theta) + ring_centerX)
+        n_next = round((m-ring_centerX)*np.sin(theta) + (n-ring_centerY)*np.cos(theta) + ring_centerY)
+        ringcoor_arr0[index, :] = [m_next, n_next]
+
 
 # generate coordinate value from ring coordinates
-xcoor = np.flip(np.sort(np.unique(ringcoor_arr[:,0])))
-ycoor = np.flip(np.sort(np.unique(ringcoor_arr[:,1])))
+xcoor = np.flip(np.sort(np.unique(ringcoor_arr0[:,0])))
+ycoor = np.flip(np.sort(np.unique(ringcoor_arr0[:,1])))
 #print('xcoor = :', xcoor)
 #print("ycoor = :", ycoor)
 # Generate a column of traps outside the ring
@@ -224,7 +242,7 @@ if rot:
     location = location_rot
     targetAmp = targetAmp_rot
 myIMG.plotFocalplane(targetAmp, location)
-Loop = 4
+Loop = 12
 threshold = 0.02
 WGScal = IMGpy.WGS(gaussianAmp, gaussianPhase, targetAmp)
 SLM_Amp, SLM_Phase, Focal_Amp, non_uniform = WGScal.fftLoop(Loop, threshold)
@@ -246,8 +264,8 @@ print("location = ", location)
 print("locationIMG = ", locationIMG)
 print("Phase image shape:", SLM_Screen_WGS.shape)
 # Save the SLM phase file and prepare for adapted WGS
-save = 0
-saveConfig = 0
+save = 1
+saveConfig = 1
 if __name__ == '__main__':
 
      import sys
