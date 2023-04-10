@@ -113,6 +113,13 @@ class LoadAndSave(QWidget):
         file_name, _ = QFileDialog.getSaveFileName(self, "Save target Amp file:", "", "SLM target Amp Files (*.csv)")
         np.savetxt(file_name, targetAmp, delimiter=",")
 
+    def SaveIntensityFileDialog(self, IntenArray):
+        self.initUI()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save adapted intensity array file:", "", "SLM adpated intensity Files (*.csv)")
+        np.savetxt(file_name, IntenArray, delimiter=",")
+
     def SaveAberrCorrFileDialog(self, aberrConfig):
         self.initUI()
         options = QFileDialog.Options()
